@@ -12,6 +12,7 @@ namespace Prueba_AP1_P2.Shared.Models
     {
         [Key]
         public int ProductosId { get; set; }
+        [Required(ErrorMessage = "El campo es obligatorio")]
         public string Descripcion { get; set; }
         public int Tipo { get; set; }
         [ForeignKey("EntradasId")]
