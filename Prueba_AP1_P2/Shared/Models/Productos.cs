@@ -15,7 +15,7 @@ namespace Prueba_AP1_P2.Shared.Models
         [Required(ErrorMessage = "El campo es obligatorio")]
         public string Descripcion { get; set; }
         public int Tipo { get; set; }
-        [ForeignKey("EntradasId")]
+        [ForeignKey("ProductosId")]
         public ICollection<EntredasDetalle> EntredasDetalles { get; set; } = new List<EntredasDetalle>();
     }
 }
