@@ -18,7 +18,7 @@ namespace Prueba_AP1_P2.Shared.Models
         public string Concepto { get; set; }
         public double PesoTotal { get; set; }
         public int ProductoId { get; set; }
-        public int CantidadProducida { get; set; }
+        public double CantidadProducida { get; set; }
         [ForeignKey("EntradaId")]
         public ICollection<EntredasDetalle> EntredasDetalles { get; set; } = new List<EntredasDetalle>(); 
     }
