@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.ResponseCompression;
+using Microsoft.EntityFrameworkCore;
+using Prueba_AP1_P2.Server.DAL;
 
 namespace Prueba_AP1_P2
 {
@@ -12,6 +14,8 @@ namespace Prueba_AP1_P2
 
             builder.Services.AddControllersWithViews();
             builder.Services.AddRazorPages();
+            var ConStr = builder.Configuration.GetConnectionString("ConStr");
+            builder.Services.AddDbContext<Context>(op => op.UseSqlite(ConStr));
 
             var app = builder.Build();
 
