@@ -11,17 +11,15 @@ namespace Prueba_AP1_P2.Shared.Models
     public class Entradas
     {
         [Key]
-        public int EntradasId { get; set; }
-        [Required(ErrorMessage ="El campo es obligatorio")]
-        public DateTime Fecha { get; set; }
-        public string Concepto { get; set; }
-        [Range(1, double.MaxValue, ErrorMessage = "El campo esta fuera de rango")]
-        public double PesoTotal { get; set; }
+        public int EntradaId { get; set; }
         [Required(ErrorMessage = "El campo es obligatorio")]
+        public DateTime Fecha { get; set; } = DateTime.Now;
+        [Required(ErrorMessage = "El campo es obligatorio")]
+        public string Concepto { get; set; }
+        public double PesoTotal { get; set; }
         public int ProductoId { get; set; }
-        [Range(1, int.MaxValue, ErrorMessage = "El campo esta fuera de rango")]
         public int CantidadProducida { get; set; }
-        [ForeignKey("EntradasId")]
+        [ForeignKey("EntradaId")]
         public ICollection<EntredasDetalle> EntredasDetalles { get; set; } = new List<EntredasDetalle>(); 
     }
 }
