@@ -39,7 +39,7 @@
                         <br />
 
 
-                        <fieldset>
+                        @*<fieldset>*@
                             <div class="card-header">
                                 <h3>Utilizados</h3>
                             </div>
@@ -108,10 +108,10 @@
                             <div class="row justify-content-between">
                                 <div class="col-2">
                                     <label>Peso Total:</label>
-                                    <input @bind-value="PesoTotal" class="form-control" disabled />
+                                <input @bind-value="PesoTotal" class="form-control" disabled />
                                 </div>
                             </div>
-                        </fieldset>
+                        @*</fieldset>*@
                     </div>
 
                     <br />
@@ -213,7 +213,7 @@
                 Duration = 5_000
             };
         notificationService.Notify(mensaje);
-
+        PesoTotal = 0;
         return;
     }
     public async Task Buscar()
@@ -226,6 +226,8 @@
             if(entradasEncontrada != null)
             {
                 Entradas = entradasEncontrada;
+                PesoTotal = Entradas.EntredasDetalles.Sum(ed => ed.CantidadUtilizada);
+
                 StateHasChanged();
             }
         }
@@ -266,6 +268,8 @@
             EntredasDetalle.EntradaId = Entradas.EntradaId;
             Entradas.EntredasDetalles.Add(EntredasDetalle);
             EntredasDetalle = new EntredasDetalle();
+            PesoTotal = Entradas.EntredasDetalles.Sum(ed => ed.CantidadUtilizada);
+
         }
         else
         {
@@ -297,8 +301,9 @@
             var entradas = BuscarEntradas(detalleEncontrado.EntradaId);
             detalle = detalleEncontrado;
             EntredasDetalle = detalleEncontrado;
-            EntredasDetalle.ProductoId = detalleEncontrado.ProductoId;
+            //EntredasDetalle.ProductoId = detalleEncontrado.ProductoId;
             Entradas.EntredasDetalles.Remove(detalle);
+            PesoTotal = Entradas.EntredasDetalles.Sum(ed => ed.CantidadUtilizada);
             await httpClient.DeleteAsync($"api/Entradas/DeleteEntradaDetalle/{detalle.DetalleId}");
         }
         StateHasChanged();

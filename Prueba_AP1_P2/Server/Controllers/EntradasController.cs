@@ -98,7 +98,7 @@ namespace Prueba_AP1_P2.Server.Controllers
 
             return Ok(entradas);
         }
-
+                                        
         // DELETE: api/Entradas/5
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteEntradas(int id)
