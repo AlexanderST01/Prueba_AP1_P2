@@ -86,14 +86,14 @@ namespace Prueba_AP1_P2.Server.Controllers
         [HttpPost]
         public async Task<ActionResult<Productos>> PostProductos(Productos productos)
         {
-          if (_context.Productos == null)
-          {
-              return Problem("Entity set 'Context.Productos'  is null.");
-          }
-            _context.Productos.Add(productos);
+            if (!ProductosExists(productos.ProductoId))
+                _context.Productos.Update(productos);
+            else
+                _context.Productos.Add(productos);
+
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetProductos", new { id = productos.ProductoId }, productos);
+            return Ok(productos);
         }
 
         // DELETE: api/Productos/5
