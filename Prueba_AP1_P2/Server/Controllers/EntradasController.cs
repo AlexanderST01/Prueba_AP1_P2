@@ -96,6 +96,28 @@ namespace Prueba_AP1_P2.Server.Controllers
 
             await _context.SaveChangesAsync();
 
+           // var entradaAnterior = _context.Entradas.Include(e => e.EntredasDetalles).AsNoTracking()
+           //.FirstOrDefault(e => e.EntradaId == entradas.EntradaId);
+
+           // if (entradaAnterior != null && entradaAnterior.EntredasDetalles != null)
+           // {
+           //     foreach (var productoConsumido in entradaAnterior.EntredasDetalles)
+           //     {
+           //         if (productoConsumido != null)
+           //         {
+           //             var producto = _context.Productos.Find(productoConsumido.ProductoId);
+
+           //             if (producto != null)
+           //             {
+           //                 producto.Existencia -= productoConsumido.CantidadUtilizada;
+           //                 _context.Productos.Update(producto);
+           //                 await _context.SaveChangesAsync();
+           //                 _context.Entry(producto).State = EntityState.Detached;
+           //             }
+           //         }
+           //     }
+           // }
+
             return Ok(entradas);
         }
                                         
@@ -130,6 +152,7 @@ namespace Prueba_AP1_P2.Server.Controllers
             {
                 return NotFound();
             }
+
             _context.EntredasDetalles.Remove(entradas);
             await _context.SaveChangesAsync();
 
