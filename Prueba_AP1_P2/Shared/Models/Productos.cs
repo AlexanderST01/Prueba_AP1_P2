@@ -17,6 +17,6 @@ namespace Prueba_AP1_P2.Shared.Models
 
         public int Tipo { get; set; }
 
-        public int Existencia { get; set; }   
+        public double Existencia { get; set; }   
     }
 }
