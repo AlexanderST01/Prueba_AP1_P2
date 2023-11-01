@@ -39,7 +39,7 @@
                         <br />
 
 
-                        @*<fieldset>*@
+                        <fieldset>
                             <div class="card-header">
                                 <h3>Utilizados</h3>
                             </div>
@@ -111,7 +111,7 @@
                                 <input @bind-value="PesoTotal" class="form-control" disabled />
                                 </div>
                             </div>
-                        @*</fieldset>*@
+                        </fieldset>
                     </div>
 
                     <br />
@@ -149,6 +149,8 @@
     public Entradas Entradas { get; set; } = new Entradas();
     public List<Productos> Productos { get; set; } = new List<Productos>();
     public List<Entradas> ListEntradas { get; set; } = new();
+    public List<EntredasDetalle> DetallesEliminados { get; set; } = new();
+    public List<EntredasDetalle> DetallesAgregado { get; set; } = new();
     public double PesoTotal { get; set; }
 
     public int id = 0;
@@ -156,17 +158,18 @@
     protected override  async void OnInitialized()
     {
         var productos = await httpClient.GetFromJsonAsync<List<Productos>>("api/Productos");
-
         if (productos is not null)
         {
             Productos = productos;
+            EntredasDetalle.ProductoId = productos.First().ProductoId;
         }
-        ListEntradas = await httpClient.GetFromJsonAsync<List<Entradas>>($"api/Entradas");
+        //ListEntradas = await httpClient.GetFromJsonAsync<List<Entradas>>($"api/Entradas");
         if (EntradaId > 0)
         {
             Entradas.EntradaId = EntradaId;
             await Buscar();
         }
+        StateHasChanged();
     }
 
     public async Task Guardar()
@@ -189,6 +192,26 @@
         if (entradasDevuelta is not null)
         {
             Entradas = entradasDevuelta;
+            if (DetallesEliminados != null)
+            {
+                foreach (var item in DetallesEliminados)
+                {
+                    await httpClient.DeleteAsync($"api/Entradas/DeleteDetalles/{item.DetalleId}");
+                    var disminuir = Productos.FirstOrDefault(p => p.ProductoId == item.ProductoId);
+                    disminuir.Existencia = disminuir.Existencia + item.CantidadUtilizada;
+                    using var responseDetalleEliminado = await httpClient.PutAsJsonAsync<Productos>($"api/Productos/{disminuir.ProductoId}", disminuir);
+                }
+            }
+
+            if(DetallesAgregado != null)
+            {
+                foreach (var item in DetallesAgregado)
+                {
+                    var disminuir = Productos.FirstOrDefault(p => p.ProductoId == item.ProductoId);
+                    disminuir.Existencia = disminuir.Existencia - item.CantidadUtilizada;
+                    using var responseDetalleAgregado = await httpClient.PutAsJsonAsync<Productos>($"api/Productos/{disminuir.ProductoId}", disminuir);
+                }
+            }
             StateHasChanged();
             var mensaje = new NotificationMessage
                 {
@@ -205,6 +228,7 @@
     {
         Entradas = new();
         EntredasDetalle = new();
+        DetallesAgregado = new();
         var mensaje = new NotificationMessage
             {
                 Severity = NotificationSeverity.Success,
@@ -214,10 +238,13 @@
             };
         notificationService.Notify(mensaje);
         PesoTotal = 0;
+        DetallesEliminados = new();
+
         return;
     }
     public async Task Buscar()
     {
+        DetallesAgregado = new();
         var entradasNotNull = (await httpClient.GetFromJsonAsync<List<Entradas>>($"api/Entradas"))
         .ToList().Any(e => e.EntradaId == Entradas.EntradaId);
         if(entradasNotNull)
@@ -261,28 +288,33 @@
         else
             Nuevo();
     }
-    public void AgregarDetalle()
+    public async Task AgregarDetalle()
     {
-        if(Entradas != null)
+        if (Entradas != null)
         {
             EntredasDetalle.EntradaId = Entradas.EntradaId;
             Entradas.EntredasDetalles.Add(EntredasDetalle);
+            //var disminuir = Productos.Find(p => p.ProductoId == EntredasDetalle.ProductoId).Existencia -= EntredasDetalle.CantidadUtilizada;
+
+            var disminuir = Productos.FirstOrDefault(p => p.ProductoId == EntredasDetalle.ProductoId);
+            //disminuir.Existencia = disminuir.Existencia - EntredasDetalle.CantidadUtilizada;
+            DetallesAgregado.Add(EntredasDetalle);
+            //using var response = await httpClient.PutAsJsonAsync<Productos>($"api/Productos/{disminuir.ProductoId}", disminuir);
             EntredasDetalle = new EntredasDetalle();
             PesoTotal = Entradas.EntredasDetalles.Sum(ed => ed.CantidadUtilizada);
+            StateHasChanged();
+
+            //Productos? ProductoUpdate = ProductosList.FirstOrDefault(p => p.ProductoId == ProductoSeleccionadoUtilizado);
+            //ProductoUpdate.Existencia = ProductoUpdate.Existencia - Cantidad;
+            //using var response = await httpClient.PutAsJsonAsync<Productos>($"api/Productos/{ProductoSeleccionadoUtilizado}", ProductoUpdate);
+            //Cantidad = 0;
+            //StateHasChanged();
 
         }
-        else
-        {
-            
-        }
+
         StateHasChanged();
     }
-    private async Task CargarProductos()
-    {
-        var encontrado = await httpClient.GetFromJsonAsync<List<Productos>>("api/Productos");
-        if (encontrado != null)
-            Productos = encontrado;
-    }
+
     private async Task<Entradas> BuscarEntradas(int entradasId)
     {
         Entradas entradas = new();
@@ -296,25 +328,73 @@
     private async Task RemoveDatalle(EntredasDetalle detalle)
     {
         var detalleEncontrado = Entradas.EntredasDetalles.FirstOrDefault(ed => ed.DetalleId == detalle.DetalleId);
-        if(detalleEncontrado != null)
+        if (detalleEncontrado != null)
         {
             var entradas = BuscarEntradas(detalleEncontrado.EntradaId);
             detalle = detalleEncontrado;
             EntredasDetalle = detalleEncontrado;
-            //EntredasDetalle.ProductoId = detalleEncontrado.ProductoId;
+            EntredasDetalle.ProductoId = detalleEncontrado.ProductoId;
             Entradas.EntredasDetalles.Remove(detalle);
             PesoTotal = Entradas.EntredasDetalles.Sum(ed => ed.CantidadUtilizada);
-            await httpClient.DeleteAsync($"api/Entradas/DeleteEntradaDetalle/{detalle.DetalleId}");
+            DetallesEliminados.Add(detalleEncontrado);
+
+            //await httpClient.DeleteAsync($"api/Entradas/DeleteEntraDetalle/{detalle.DetalleId}");
+            //await httpClient.DeleteAsync($"api/Entradas/DeleteDetalles/{detalle.DetalleId}");
+            //EntredasDetalle = new EntredasDetalle();
+
+            //para devolver productos
+
+
         }
-        StateHasChanged();
+        //StateHasChanged();
 
     }
+
+    //private async Task RemoveDatalle(EntredasDetalle detalle)
+    //{
+    //    var detalleEncontrado = Entradas.EntredasDetalles.FirstOrDefault(ed => ed.DetalleId == detalle.DetalleId);
+    //    if (detalleEncontrado != null)
+    //    {
+    //        var entradas = BuscarEntradas(detalleEncontrado.EntradaId);
+    //        detalle = detalleEncontrado;
+    //        EntredasDetalle = detalleEncontrado;
+    //        EntredasDetalle.ProductoId = detalleEncontrado.ProductoId;
+    //        Entradas.EntredasDetalles.Remove(detalle);
+    //        PesoTotal = Entradas.EntredasDetalles.Sum(ed => ed.CantidadUtilizada);
+    //        //await httpClient.DeleteAsync($"api/Entradas/DeleteEntraDetalle/{detalle.DetalleId}");
+    //        await httpClient.DeleteAsync($"api/Entradas/DeleteDetalles/{detalle.DetalleId}");
+    //        //EntredasDetalle = new EntredasDetalle();
+
+    //        //para devolver productos
+    //        var disminuir = Productos.FirstOrDefault(p => p.ProductoId == detalle.ProductoId);
+    //        disminuir.Existencia = disminuir.Existencia + detalle.CantidadUtilizada;
+    //        using var response = await httpClient.PutAsJsonAsync<Productos>($"api/Productos/{disminuir.ProductoId}", disminuir);
+
+    //    }
+    //    //StateHasChanged();
+
+    //}
+
     public async Task<string> ObternerDescripcionAsync (int Id)
     {
         var prod = await httpClient.GetFromJsonAsync<Productos>($"api/Productos/{Id}");
         return prod.Descripcion;
     }
-    public string ObtenerDescripcion(int Id)
+    //public string ObtenerDescripcion(int Id)
+    //{
+    //    var producto = Productos.FirstOrDefault(t => t.ProductoId == Id);
+    //    return producto?.Descripcion ?? "Descripción no encontrada";
+    //}
+    //public string ObtenerDescripcion(int Id)
+    //{
+    //    return Productos.Where(p => p.ProductoId == Id).FirstOrDefault()!.Descripcion!;
+    //}
+    public async Task<int> ObtenerProductoId(int detalleId)
+    {
+        var detalle = await httpClient.GetFromJsonAsync<List<EntredasDetalle>>("api/Entradas");
+        return detalle.Where(ed => ed.DetalleId == detalleId).FirstOrDefault().ProductoId;
+    }
+    public string? ObtenerDescripcion(int Id)
     {
         var productos = Productos.FirstOrDefault(t => t.ProductoId == Id);
         return productos.Descripcion;
