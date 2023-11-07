@@ -46,12 +46,7 @@
                             <div class="row">
                                 <div class="col-md-6">
                                     <label>Producto: </label>
-                                    <InputSelect @bind-Value="EntredasDetalle.ProductoId" class="form-select">
-                                       
-                                    @*<option value="@EntredasDetalle.ProductoId" hidden="hidden">@ObternerDescripcionAsync(EntredasDetalle.ProductoId)</option>*@
-                                    @*<option value="@EntredasDetalle.ProductoId" hidden="hidden">[Seleccione]</option>*@
-
-
+                                    <InputSelect @bind-Value="EntredasDetalle.ProductoId" class="form-select">                                    
                                     @foreach (var item in Productos)
                                         {
                                             @if(item.Tipo == 0)
@@ -120,11 +115,23 @@
                         <legend>Producido</legend>
                         <div class="row">
                             <div class="col-3">
-                                <InputNumber @bind-Value="Entradas.CantidadProducida" class="form-control" disabled></InputNumber>
+                                <InputSelect @bind-Value="Entradas.ProductoId" class="form-select" @onblur="VerificarSeleccionadoProducion">
+
+                                    @foreach (var item in Productos)
+                                    {
+                                        @if (item.Tipo == 1)
+                                        {
+                                            <option value="@item.ProductoId">@item.Descripcion</option>
+                                        }
+                                    }
+                                </InputSelect>
+                                <ValidationMessage For="@(() => EntredasDetalle.DetalleId)" />
                             </div>
 
                             <div class="col-2">
-                                <input @bind-value="PesoTotal" class="form-control" disabled />
+                                @* <input @bind-value="Entradas.CantidadProducida" class="form-control" disabled /> *@
+                                <InputNumber @bind-Value="Entradas.CantidadProducida" class="form-control" @oninput="ValidarProducido"></InputNumber>
+
                             </div>
                         </div>
                     </fieldset>
@@ -148,10 +155,22 @@
     public EntredasDetalle EntredasDetalle { get; set; } = new();
     public Entradas Entradas { get; set; } = new Entradas();
     public List<Productos> Productos { get; set; } = new List<Productos>();
+    public Productos Producidos { get; set; } = new Productos();
     public List<Entradas> ListEntradas { get; set; } = new();
     public List<EntredasDetalle> DetallesEliminados { get; set; } = new();
     public List<EntredasDetalle> DetallesAgregado { get; set; } = new();
+
+    public List<EntredasDetalle> ReduccionProductos { get; set; } = new();
+
+    public bool MPP5 { get; set; } = false;
+    public bool MPP2 { get; set; } = false;
+    public bool MPC5 { get; set; } = false;
+
+
+
     public double PesoTotal { get; set; }
+
+
 
     public int id = 0;
 
@@ -163,7 +182,6 @@
             Productos = productos;
             EntredasDetalle.ProductoId = productos.First().ProductoId;
         }
-        //ListEntradas = await httpClient.GetFromJsonAsync<List<Entradas>>($"api/Entradas");
         if (EntradaId > 0)
         {
             Entradas.EntradaId = EntradaId;
@@ -174,58 +192,76 @@
 
     public async Task Guardar()
     {
-
-        using var response = await httpClient.PostAsJsonAsync("api/Entradas", Entradas);
-        if(!response.IsSuccessStatusCode)
-        {
-            var mensaje = new NotificationMessage
-                {
-                    Severity = NotificationSeverity.Error,
-                    Summary = "Erro ",
-                    Detail = "Entrada no guardada",
-                    Duration = 5_000
-                };
-            notificationService.Notify(mensaje);
-            return;
-        }
-        var entradasDevuelta = await response.Content.ReadFromJsonAsync<Entradas>();
-        if (entradasDevuelta is not null)
-        {
-            Entradas = entradasDevuelta;
-            if (DetallesEliminados != null)
+        // if (await ValidarProducido()) ///arreglar que pueda guardar sin necesidad de agregar un detalle
+        // {
+            Entradas.PesoTotal = PesoTotal;
+            using var response = await httpClient.PostAsJsonAsync("api/Entradas", Entradas);
+            if (!response.IsSuccessStatusCode)
             {
-                foreach (var item in DetallesEliminados)
-                {
-                    await httpClient.DeleteAsync($"api/Entradas/DeleteDetalles/{item.DetalleId}");
-                    var disminuir = Productos.FirstOrDefault(p => p.ProductoId == item.ProductoId);
-                    disminuir.Existencia = disminuir.Existencia + item.CantidadUtilizada;
-                    using var responseDetalleEliminado = await httpClient.PutAsJsonAsync<Productos>($"api/Productos/{disminuir.ProductoId}", disminuir);
-                }
+                var mensaje = new NotificationMessage
+                    {
+                        Severity = NotificationSeverity.Error,
+                        Summary = "Erro ",
+                        Detail = "Entrada no guardada",
+                        Duration = 5_000
+                    };
+                notificationService.Notify(mensaje);
+                return;
             }
-
-            if(DetallesAgregado != null)
+            var entradasDevuelta = await response.Content.ReadFromJsonAsync<Entradas>();
+            if (entradasDevuelta is not null)
             {
-                foreach (var item in DetallesAgregado)
+                if (DetallesEliminados != null)
                 {
-                    var disminuir = Productos.FirstOrDefault(p => p.ProductoId == item.ProductoId);
-                    disminuir.Existencia = disminuir.Existencia - item.CantidadUtilizada;
-                    using var responseDetalleAgregado = await httpClient.PutAsJsonAsync<Productos>($"api/Productos/{disminuir.ProductoId}", disminuir);
+                    foreach (var item in DetallesEliminados)
+                    {
+                        if (DetallesAgregado.Any(d => d.DetalleId == item.DetalleId))
+                        {
+                            DetallesEliminados.Remove(item);
+                            DetallesAgregado.Remove(item);
+                        }
+                    }
                 }
-            }
-            StateHasChanged();
-            var mensaje = new NotificationMessage
+                Entradas = entradasDevuelta;
+                if (DetallesEliminados.Count > 0)
                 {
-                    Severity = NotificationSeverity.Success,
-                    Summary = "Guardado ",
-                    Detail = "Entradas guardado",
-                    Duration = 5_000
-                };
-            notificationService.Notify(mensaje);
-            Nuevo();
-        }
+                    foreach (var item in DetallesEliminados)
+                    {
+                        await httpClient.DeleteAsync($"api/Entradas/DeleteDetalles/{item.DetalleId}");
+                        var disminuir = Productos.FirstOrDefault(p => p.ProductoId == item.ProductoId);
+                        disminuir.Existencia = disminuir.Existencia + item.CantidadUtilizada;
+                        using var responseDetalleEliminado = await httpClient.PutAsJsonAsync<Productos>($"api/Productos/{disminuir.ProductoId}", disminuir);
+                    }
+                }
+
+                if (DetallesAgregado.Count > 0)
+                {
+                    foreach (var item in DetallesAgregado)
+                    {
+                        var disminuir = Productos.FirstOrDefault(p => p.ProductoId == item.ProductoId);
+                        disminuir.Existencia = disminuir.Existencia - item.CantidadUtilizada;
+                        using var responseDetalleAgregado = await httpClient.PutAsJsonAsync<Productos>($"api/Productos/{disminuir.ProductoId}", disminuir);
+                    }
+                }
+
+                StateHasChanged();
+                var mensaje = new NotificationMessage
+                    {
+                        Severity = NotificationSeverity.Success,
+                        Summary = "Guardado ",
+                        Detail = "Entradas guardado",
+                        Duration = 5_000
+                    };
+                notificationService.Notify(mensaje);
+                Nuevo();
+            }
+        // }
     }
     public  void Nuevo()
     {
+        MPP5 = false;
+        MPP2 = false;
+        MPC5 = false;
         Entradas = new();
         EntredasDetalle = new();
         DetallesAgregado = new();
@@ -245,6 +281,7 @@
     public async Task Buscar()
     {
         DetallesAgregado = new();
+        DetallesEliminados = new();
         var entradasNotNull = (await httpClient.GetFromJsonAsync<List<Entradas>>($"api/Entradas"))
         .ToList().Any(e => e.EntradaId == Entradas.EntradaId);
         if(entradasNotNull)
@@ -290,25 +327,45 @@
     }
     public async Task AgregarDetalle()
     {
-        if (Entradas != null)
+        if (Validar())
         {
-            EntredasDetalle.EntradaId = Entradas.EntradaId;
-            Entradas.EntredasDetalles.Add(EntredasDetalle);
-            //var disminuir = Productos.Find(p => p.ProductoId == EntredasDetalle.ProductoId).Existencia -= EntredasDetalle.CantidadUtilizada;
+            var producto = await BuscarProductos(EntredasDetalle.ProductoId);
+            if(producto != null)
+            {
+                if (EntredasDetalle.CantidadUtilizada > producto.Existencia)
+                {
+                    var mensaje = new NotificationMessage
+                                {
+                                    Severity = NotificationSeverity.Error,
+                                    Summary = "Error",
+                            Detail = $"En el inventario no hay suficiente para abasteser {producto.Descripcion}: {EntredasDetalle.CantidadUtilizada}",
+                                    Duration = 4_000
+                                };
+                    notificationService.Notify(mensaje);
+                    return;
+                }
+            }
 
-            var disminuir = Productos.FirstOrDefault(p => p.ProductoId == EntredasDetalle.ProductoId);
-            //disminuir.Existencia = disminuir.Existencia - EntredasDetalle.CantidadUtilizada;
-            DetallesAgregado.Add(EntredasDetalle);
-            //using var response = await httpClient.PutAsJsonAsync<Productos>($"api/Productos/{disminuir.ProductoId}", disminuir);
+
+            var encontrado = await httpClient.GetFromJsonAsync<List<EntredasDetalle>>($"api/Entradas");
+            var Existe = encontrado.Any(e => e.DetalleId == EntredasDetalle.EntradaId);
+
+            EntredasDetalle.EntradaId = Entradas.EntradaId;
+            //var disminuir = Productos.FirstOrDefault(p => p.ProductoId == EntredasDetalle.ProductoId);
+
+            if (DetallesEliminados.Any(d => d.DetalleId == EntredasDetalle.DetalleId))
+                DetallesEliminados.Remove(EntredasDetalle);
+
+            if (Existe)
+                DetallesAgregado.Add(EntredasDetalle);
+
+            Entradas.EntredasDetalles.Add(EntredasDetalle);
+
+
             EntredasDetalle = new EntredasDetalle();
             PesoTotal = Entradas.EntredasDetalles.Sum(ed => ed.CantidadUtilizada);
-            StateHasChanged();
-
-            //Productos? ProductoUpdate = ProductosList.FirstOrDefault(p => p.ProductoId == ProductoSeleccionadoUtilizado);
-            //ProductoUpdate.Existencia = ProductoUpdate.Existencia - Cantidad;
-            //using var response = await httpClient.PutAsJsonAsync<Productos>($"api/Productos/{ProductoSeleccionadoUtilizado}", ProductoUpdate);
-            //Cantidad = 0;
-            //StateHasChanged();
+            // StateHasChanged();
+            ValidarProducido();
 
         }
 
@@ -336,67 +393,260 @@
             EntredasDetalle.ProductoId = detalleEncontrado.ProductoId;
             Entradas.EntredasDetalles.Remove(detalle);
             PesoTotal = Entradas.EntredasDetalles.Sum(ed => ed.CantidadUtilizada);
+
+            if (DetallesAgregado.Any(d => d.DetalleId == detalleEncontrado.DetalleId))
+                DetallesAgregado.Remove(detalleEncontrado);
+
             DetallesEliminados.Add(detalleEncontrado);
-
-            //await httpClient.DeleteAsync($"api/Entradas/DeleteEntraDetalle/{detalle.DetalleId}");
-            //await httpClient.DeleteAsync($"api/Entradas/DeleteDetalles/{detalle.DetalleId}");
-            //EntredasDetalle = new EntredasDetalle();
-
-            //para devolver productos
-
-
         }
-        //StateHasChanged();
+        StateHasChanged();
 
     }
-
-    //private async Task RemoveDatalle(EntredasDetalle detalle)
-    //{
-    //    var detalleEncontrado = Entradas.EntredasDetalles.FirstOrDefault(ed => ed.DetalleId == detalle.DetalleId);
-    //    if (detalleEncontrado != null)
-    //    {
-    //        var entradas = BuscarEntradas(detalleEncontrado.EntradaId);
-    //        detalle = detalleEncontrado;
-    //        EntredasDetalle = detalleEncontrado;
-    //        EntredasDetalle.ProductoId = detalleEncontrado.ProductoId;
-    //        Entradas.EntredasDetalles.Remove(detalle);
-    //        PesoTotal = Entradas.EntredasDetalles.Sum(ed => ed.CantidadUtilizada);
-    //        //await httpClient.DeleteAsync($"api/Entradas/DeleteEntraDetalle/{detalle.DetalleId}");
-    //        await httpClient.DeleteAsync($"api/Entradas/DeleteDetalles/{detalle.DetalleId}");
-    //        //EntredasDetalle = new EntredasDetalle();
-
-    //        //para devolver productos
-    //        var disminuir = Productos.FirstOrDefault(p => p.ProductoId == detalle.ProductoId);
-    //        disminuir.Existencia = disminuir.Existencia + detalle.CantidadUtilizada;
-    //        using var response = await httpClient.PutAsJsonAsync<Productos>($"api/Productos/{disminuir.ProductoId}", disminuir);
-
-    //    }
-    //    //StateHasChanged();
-
-    //}
 
     public async Task<string> ObternerDescripcionAsync (int Id)
     {
         var prod = await httpClient.GetFromJsonAsync<Productos>($"api/Productos/{Id}");
         return prod.Descripcion;
     }
-    //public string ObtenerDescripcion(int Id)
-    //{
-    //    var producto = Productos.FirstOrDefault(t => t.ProductoId == Id);
-    //    return producto?.Descripcion ?? "Descripción no encontrada";
-    //}
-    //public string ObtenerDescripcion(int Id)
-    //{
-    //    return Productos.Where(p => p.ProductoId == Id).FirstOrDefault()!.Descripcion!;
-    //}
+
     public async Task<int> ObtenerProductoId(int detalleId)
     {
         var detalle = await httpClient.GetFromJsonAsync<List<EntredasDetalle>>("api/Entradas");
         return detalle.Where(ed => ed.DetalleId == detalleId).FirstOrDefault().ProductoId;
     }
+
+    private async Task<Productos> BuscarProductos(int ProductoId)
+    {
+        var producto = await httpClient.GetFromJsonAsync<Productos>($"api/Productos/{ProductoId}");
+
+        return producto ?? new Productos();
+    }
+
     public string? ObtenerDescripcion(int Id)
     {
         var productos = Productos.FirstOrDefault(t => t.ProductoId == Id);
         return productos.Descripcion;
+    }
+    public async Task<bool> ValidarProducido()
+    {
+        MPP5 = false;
+        MPP2 = false;
+        MPC5 = false;
+
+        if(Entradas.ProductoId == 5)
+        {
+            var mani = Entradas.EntredasDetalles.Where(p => p.ProductoId == 1).Sum(s => s.CantidadUtilizada);
+            var pistacho = Entradas.EntredasDetalles.Where(p => p.ProductoId == 2).Sum(s => s.CantidadUtilizada);
+            var pasas = Entradas.EntredasDetalles.Where(p => p.ProductoId == 3).Sum(s => s.CantidadUtilizada);
+
+            for(int i = 0; i < Entradas.CantidadProducida; i++)
+            {
+
+                if (mani < 75.60)
+                {
+                    var mensaje = new NotificationMessage
+                                {
+                                    Severity = NotificationSeverity.Error,
+                                    Summary = "Maní ",
+                            Detail = $"No hay suficientes maní({(float)mani})",
+                                    Duration = 5_000
+                                };
+                    notificationService.Notify(mensaje);
+                }
+                if (pistacho < 75.60)
+                {
+                    var mensaje = new NotificationMessage
+                                {
+                                    Severity = NotificationSeverity.Error,
+                                    Summary = "Pistacho ",
+                            Detail = $"No hay suficientes pistacho({(float)pistacho})",
+                                    Duration = 5_000
+                                };
+                    notificationService.Notify(mensaje);
+                }
+                if (pasas < 75.60)
+                {
+                    var mensaje = new NotificationMessage
+                                {
+                                    Severity = NotificationSeverity.Error,
+                                    Summary = "Pasas ",
+                            Detail = $"No hay suficientes pasas({(float)pasas})",
+                                    Duration = 5_000
+                                };
+                    notificationService.Notify(mensaje);
+                }
+
+                MPP5 = (mani >= 75.60 && pistacho >= 75.60 && pasas >= 75.60);
+
+
+                if (MPP5)
+                {
+                    Producidos = Productos.FirstOrDefault(p => p.ProductoId == 5);
+                    Producidos.Existencia = Entradas.CantidadProducida;
+                    Entradas.EntredasDetalles.FirstOrDefault(e => e.ProductoId == 1);
+                    mani -= 75.60;
+                    pistacho -= 75.60;
+                    pasas -= 75.60;
+
+                }
+
+            }
+        }
+
+        if (Entradas.ProductoId == 6)
+        {
+            var mani = Entradas.EntredasDetalles.Where(m => m.ProductoId == 1).Sum(s => s.CantidadUtilizada);
+            var pistacho = Entradas.EntredasDetalles.Where(m => m.ProductoId == 2).Sum(s => s.CantidadUtilizada);
+            var pasas = Entradas.EntredasDetalles.Where(m => m.ProductoId == 3).Sum(s => s.CantidadUtilizada);
+            var ciruelas = Entradas.EntredasDetalles.Where(m => m.ProductoId == 4).Sum(s => s.CantidadUtilizada);
+
+            for (int i = 0; i < Entradas.CantidadProducida; i++)
+            {
+
+                if (mani < 75.60)
+                {
+                    var mensaje = new NotificationMessage
+                            {
+                                Severity = NotificationSeverity.Error,
+                                Summary = "Maní ",
+                            Detail = $"No hay suficientes maní({(float)mani})",
+                                Duration = 5_000
+                            };
+                    notificationService.Notify(mensaje);
+                }
+                if (pistacho < 75.60 )
+                {
+                    var mensaje = new NotificationMessage
+                        {
+                            Severity = NotificationSeverity.Error,
+                            Summary = "Pistacho ",
+                            Detail = $"No hay suficientes pistachos({(float)pistacho})",
+                            Duration = 5_000
+                        };
+                    notificationService.Notify(mensaje);
+                    if (pasas < 75.60)
+                    {
+                        var mensajes = new NotificationMessage
+                            {
+                                Severity = NotificationSeverity.Error,
+                                Summary = "Pistacho o Posas",
+                                Detail = $"No hay suficientes pasas({(float)pasas})",
+                                Duration = 5_000
+                            };
+                        notificationService.Notify(mensajes);
+                    }
+                }
+
+
+                if (ciruelas < 75.60)
+                {
+                    var mensaje = new NotificationMessage
+                            {
+                                Severity = NotificationSeverity.Error,
+                                Summary = "Ciruelas ",
+                            Detail = $"No hay suficientes ciruelas({(float)ciruelas})",
+                                Duration = 5_000
+                            };
+                    notificationService.Notify(mensaje);
+                }
+
+                MPC5 = (mani >= 75.60 && (pistacho >= 75.60 || ciruelas >= 75.60) && pasas >= 75.60);
+
+                if (MPC5)
+                {
+                    Producidos = Productos.FirstOrDefault(p => p.ProductoId == 5);
+                    Producidos.Existencia = Entradas.CantidadProducida;
+                    mani -= 75.60;
+                    pistacho -= 75.60;
+                    pasas -= 75.60;
+                    ciruelas -= 75.60;
+                }
+
+            }
+        }
+        if (Entradas.ProductoId == 7)
+        {
+            var mani = Entradas.EntredasDetalles.Where(p => p.ProductoId == 1).Sum(s => s.CantidadUtilizada);
+            var pistacho = Entradas.EntredasDetalles.Where(p => p.ProductoId == 2).Sum(s => s.CantidadUtilizada);
+            var pasas = Entradas.EntredasDetalles.Where(p => p.ProductoId == 3).Sum(s => s.CantidadUtilizada);
+
+            for (int i = 0; i < Entradas.CantidadProducida; i++)
+            {
+
+                if (mani < 30.24)
+                {
+                    var mensaje = new NotificationMessage
+                        {
+                            Severity = NotificationSeverity.Error,
+                            Summary = "Maní ",
+                            Detail = $"No hay suficientes maní({(float)mani})",
+                            Duration = 5_000
+                        };
+                    notificationService.Notify(mensaje);
+                }
+                if (pistacho < 30.24)
+                {
+                    var mensaje = new NotificationMessage
+                        {
+                            Severity = NotificationSeverity.Error,
+                            Summary = "Pistacho ",
+                            Detail = $"No hay suficientes pistacho({(float)pistacho})",
+                            Duration = 5_000
+                        };
+                    notificationService.Notify(mensaje);
+                }
+                if (pasas < 30.24)
+                {
+                    var mensaje = new NotificationMessage
+                        {
+                            Severity = NotificationSeverity.Error,
+                            Summary = "Pasas ",
+                            Detail = $"No hay suficientes pasas({(float)pasas})",
+                            Duration = 5_000
+                        };
+                    notificationService.Notify(mensaje);
+                }
+
+                MPP2 = (mani >= 30.24 && pistacho >= 30.24 && pasas >= 30.24);
+
+                if (MPP2)
+                {
+                    Producidos = Productos.FirstOrDefault(p => p.ProductoId == 5);
+                    Producidos.Existencia = Entradas.CantidadProducida;
+                    Entradas.EntredasDetalles.FirstOrDefault(e => e.ProductoId == 1);
+                    mani -= 30.24;
+                    pistacho -= 30.24;
+                    pasas -= 30.24;
+
+                }
+            }
+        }
+        return MPC5 || MPP5 || MPP5;
+
+    }
+    private async Task VerificarSeleccionadoProducion()
+    {
+        if (Entradas.CantidadProducida <= 0)     
+            return;
+
+        Entradas.CantidadProducida = 0;
+        ValidarProducido();
+    }
+    public bool Validar()
+    {
+        var detallesNotNull = EntredasDetalle.ProductoId > 0 && EntredasDetalle.CantidadUtilizada > 0;
+        if (!detallesNotNull)
+        {
+            var mensaje = new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "Error ",
+                    Detail = "Debes de elegir un producto y introducir una cantidad",
+                    Duration = 5_000
+                };
+            notificationService.Notify(mensaje);
+        }
+
+        return detallesNotNull;
     }
 }
