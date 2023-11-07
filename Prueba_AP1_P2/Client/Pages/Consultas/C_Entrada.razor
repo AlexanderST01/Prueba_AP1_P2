@@ -1,0 +1,193 @@
+﻿@page "/ConsultaEntradas"
+@inject HttpClient httpClient
+
+<div>
+    <div class="row justify-content-start ">
+        <div class=" col-sm-7 col-md-7 col-lg-10 col-xl-xxl-9 ">
+            <div class="card">
+                <div class="card-header">
+                    <h1>Consulta Entradas</h1>
+                    <div class="row">
+                        <div class="col mb-3">
+                            <label>Desde: </label>
+                            <InputDate @bind-Value="Desde" class="form-control "></InputDate>
+                        </div>
+                        <div class="col mb-3">
+                            <label>Hasta: </label>
+                            <InputDate @bind-Value="Hasta" class="form-control "></InputDate>
+                        </div>
+                        <div class="row">
+                            <label>filtrar por</label>
+                            <div class="col">
+                                <InputSelect class="form-select" @bind-Value="opciones">
+                                    <option value="0" selected>ID</option>
+                                    <option value="1">Solicitado por</option>
+                                    <option value="2">Asunto</option>
+                                    <option value="3">Descripci&oacute;n</option>
+                                </InputSelect>
+                            </div>
+                            <div class="col input-group">
+                                <button class="form-control oi oi-magnifying-glass" type="button" @onclick="Buscar"></button>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col">
+
+                                @switch (opciones)
+                                {
+                                    case 0:
+                                        <InputNumber class="form-control" @bind-Value="entradasAux.EntradaId"></InputNumber>
+                                        break;
+
+                                    case 1:
+                                        <InputNumber class="form-control" @bind-Value="entradasAux.CantidadProducida"></InputNumber>
+                                        break;
+
+                                    case 2:
+                                        <InputText class="form-control" @bind-Value="entradasAux.Concepto"></InputText>
+                                        break;
+
+                                    case 3:
+                                        <InputNumber class="form-control" @bind-Value="entradasAux.PesoTotal"></InputNumber>
+                                        break;
+
+                                    case 4:
+                                        <InputNumber class="form-control" @bind-Value="entradasAux.ProductoId"></InputNumber>
+                                        break;
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive ">
+                        <table border="1" class="table table-bordered table-striped ">
+                            <thead>
+                                <tr class="table-secondary">
+                                    <th>ID</th>
+                                    <th>Canitdad porducida</th>
+                                    <th>Concepto</th>
+                                    <th>Fecha</th>
+                                    <th>Peso total</th>
+                                    <th>Id Producto</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var tabla in Entradas)
+                                {
+                                    <tr>
+                                        <td>@tabla.EntradaId</td>
+                                        <td>@tabla.CantidadProducida</td>
+                                        <td>@tabla.Concepto</td>
+                                        <td>@tabla.Fecha.ToString("MM/dd/yyyy")</td>
+                                        <td>@tabla.PesoTotal</td>
+                                        <td>@tabla.ProductoId</td>
+                                    </tr>
+                                }
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <span>Conteo: @Conteo</span>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    public List<Entradas> Entradas { get; set; } = new List<Entradas>();
+
+    public int ID { get; set; }
+    public Entradas entradasAux = new();
+    public int Conteo;
+    public int opciones;
+    public DateTime Desde { get; set; }
+    public DateTime Hasta { get; set; }
+
+    protected override void OnInitialized()
+    {
+        Desde = DateTime.Now.AddMonths(-1);
+        Hasta = DateTime.Now;
+    }
+
+    public async Task Buscar()
+    {
+        switch (opciones)
+        {
+            case 0:
+                if (entradasAux.EntradaId == 0)
+                {
+                    Entradas = (await httpClient.GetFromJsonAsync<List<Entradas>>($"api/Entradas")).Where(t => t.Fecha >= Desde.Date && t.Fecha <= Hasta).ToList();
+                    StateHasChanged();
+                }
+                else
+                {
+                    Entradas = (await httpClient.GetFromJsonAsync<List<Entradas>>($"api/Entradas")).Where(t => t.EntradaId == entradasAux.EntradaId && t.Fecha >= Desde.Date && t.Fecha <= Hasta).ToList();
+                    StateHasChanged();
+                }
+                break;
+
+            case 1:
+                if ((entradasAux.CantidadProducida <= 0))
+                {
+                    Entradas = (await httpClient.GetFromJsonAsync<List<Entradas>>($"api/Entradas")).Where(t => t.Fecha >= Desde.Date && t.Fecha <= Hasta).ToList();
+                    StateHasChanged();
+                }
+                else
+                {
+                    Entradas = (await httpClient.GetFromJsonAsync<List<Entradas>>($"api/Entradas")).Where(t => t.CantidadProducida == entradasAux.CantidadProducida
+                    && t.Fecha >= Desde.Date && t.Fecha <= Hasta).ToList();
+                    StateHasChanged();
+                }
+                break;
+
+            case 2:
+                if (string.IsNullOrEmpty(entradasAux.Concepto))
+                {
+                    Entradas = (await httpClient.GetFromJsonAsync<List<Entradas>>($"api/Entradas")).Where(t => t.Fecha >= Desde.Date && t.Fecha <= Hasta).ToList();
+                    StateHasChanged();
+                }
+                else
+                {
+                    Entradas = (await httpClient.GetFromJsonAsync<List<Entradas>>($"api/Entradas")).Where(t => t.Concepto
+                        .Contains(entradasAux.Concepto, StringComparison.OrdinalIgnoreCase)
+                        && t.Fecha >= Desde.Date && t.Fecha <= Hasta).ToList();
+                    StateHasChanged();
+                }
+                break;
+
+            case 3:
+                if ((entradasAux.PesoTotal <= 0))
+                {
+                    Entradas = (await httpClient.GetFromJsonAsync<List<Entradas>>($"api/Entradas")).Where(t => t.Fecha >= Desde.Date && t.Fecha <= Hasta).ToList();
+                    StateHasChanged();
+                }
+                else
+                {
+                    Entradas = (await httpClient.GetFromJsonAsync<List<Entradas>>($"api/Entradas")).Where(t => t.PesoTotal == entradasAux.PesoTotal
+                    && t.Fecha >= Desde.Date && t.Fecha <= Hasta).ToList();
+                    StateHasChanged();
+                }
+                break;
+
+            case 4:
+                if (entradasAux.ProductoId <= 0)
+                {
+                    Entradas = (await httpClient.GetFromJsonAsync<List<Entradas>>($"api/Entradas")).Where(t => t.Fecha >= Desde.Date && t.Fecha <= Hasta).ToList();
+                    StateHasChanged();
+                }
+                else
+                {
+                    Entradas = (await httpClient.GetFromJsonAsync<List<Entradas>>($"api/Entradas")).Where(t => t.ProductoId == entradasAux.ProductoId
+                        && t.Fecha >= Desde.Date && t.Fecha <= Hasta).ToList();
+                    StateHasChanged();
+                }
+                break;
+        }
+        Conteo = Entradas != null ? Entradas!.Count() : 0;
+    }
+}
