@@ -70,6 +70,7 @@
                                     <th>Fecha</th>
                                     <th>Peso total</th>
                                     <th>Id Producto</th>
+                                    <th>Ver</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -82,6 +83,7 @@
                                         <td>@tabla.Fecha.ToString("MM/dd/yyyy")</td>
                                         <td>@tabla.PesoTotal</td>
                                         <td>@tabla.ProductoId</td>
+                                        <td><a href="RegistroEntradas/@tabla.EntradaId">Ver</a></td>
                                     </tr>
                                 }
                             </tbody>
