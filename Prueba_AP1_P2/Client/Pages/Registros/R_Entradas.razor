@@ -90,7 +90,7 @@
                                                 <tr>
                                                 <td>@item.ProductoId</td>
                                                 <td>@ObtenerDescripcion(item.ProductoId)</td>
-                                                <td>@item.CantidadUtilizada</td>
+                                                <td>@item.CantidadUtilizada g</td>
                                                     <td><button type="button" class="btn btn-danger" @onclick=@(() => RemoveDatalle(item))><i class="oi oi-trash" /></button></td>
                                                 </tr>
                                             }
@@ -116,7 +116,7 @@
                         <div class="row">
                             <div class="col-3">
                                 <InputSelect @bind-Value="Entradas.ProductoId" class="form-select" @onblur="VerificarSeleccionadoProducion">
-
+                                    <option value="0">Opciones</option>
                                     @foreach (var item in Productos)
                                     {
                                         @if (item.Tipo == 1)
@@ -166,6 +166,7 @@
     public bool MPP2 { get; set; } = false;
     public bool MPC5 { get; set; } = false;
 
+    public bool ValidacionEntro { get; set; } = false;
 
 
     public double PesoTotal { get; set; }
@@ -192,9 +193,40 @@
 
     public async Task Guardar()
     {
-        // if (await ValidarProducido()) ///arreglar que pueda guardar sin necesidad de agregar un detalle
-        // {
+        if (await ValidarProducido()) ///arreglar que pueda guardar sin necesidad de agregar un detalle
+        {
             Entradas.PesoTotal = PesoTotal;
+
+            var listEntradas = await httpClient.GetFromJsonAsync<List<Entradas>>("api/Entradas");
+            var entradaAux = listEntradas.FirstOrDefault(e => e.EntradaId == Entradas.EntradaId);
+            var ListProductos = await httpClient.GetFromJsonAsync<List<Productos>>("api/Productos");
+
+            if(entradaAux is not null)
+            {               
+                var CantidadProducidoMayor = (entradaAux.CantidadProducida < Entradas.CantidadProducida) && Entradas.ProductoId >= 5 ;
+                if (CantidadProducidoMayor)
+                {
+                    var aumentrar = ListProductos.FirstOrDefault(p => p.ProductoId == Entradas.ProductoId);
+                    aumentrar.Existencia = aumentrar.Existencia + (Entradas.CantidadProducida - entradaAux.CantidadProducida);
+                    using var responseDetalleAgregado = await httpClient.PutAsJsonAsync<Productos>($"api/Productos/{aumentrar.ProductoId}", aumentrar);
+                }
+
+                var CantidadProducidoMenor = (entradaAux.CantidadProducida > Entradas.CantidadProducida) && Entradas.ProductoId >= 5;
+                if (CantidadProducidoMenor)
+                {
+                    var disminuir = ListProductos.FirstOrDefault(p => p.ProductoId == Entradas.ProductoId);
+                    disminuir.Existencia = disminuir.Existencia - (entradaAux.CantidadProducida - Entradas.CantidadProducida);
+                    using var responseDetalleAgregado = await httpClient.PutAsJsonAsync<Productos>($"api/Productos/{disminuir.ProductoId}", disminuir);
+                }
+            }
+            else if(Entradas.ProductoId >=5)
+            {
+                var aumentar = ListProductos.FirstOrDefault(p => p.ProductoId == Entradas.ProductoId);
+                aumentar.Existencia = aumentar.Existencia + Entradas.CantidadProducida;
+                using var responseDetalleAgregado = await httpClient.PutAsJsonAsync<Productos>($"api/Productos/{aumentar.ProductoId}", aumentar);
+            }
+
+
             using var response = await httpClient.PostAsJsonAsync("api/Entradas", Entradas);
             if (!response.IsSuccessStatusCode)
             {
@@ -209,8 +241,27 @@
                 return;
             }
             var entradasDevuelta = await response.Content.ReadFromJsonAsync<Entradas>();
+
+            var cambiosCatidad = entradasDevuelta.CantidadProducida == Entradas.CantidadProducida;
+
             if (entradasDevuelta is not null)
             {
+                // var CantidadProducidoMayor = (entradasDevuelta.CantidadProducida < Entradas.CantidadProducida) && Entradas.ProductoId >= 5;
+                // if (CantidadProducidoMayor)
+                // {
+                //     var disminuir = Productos.FirstOrDefault(p => p.ProductoId == Entradas.ProductoId);
+                //     disminuir.Existencia = disminuir.Existencia + (disminuir.Existencia - Entradas.CantidadProducida);
+                //     using var responseDetalleAgregado = await httpClient.PutAsJsonAsync<Productos>($"api/Productos/{disminuir.ProductoId}", disminuir);
+                // }
+
+                // var CantidadProducidoMenor = (entradasDevuelta.CantidadProducida > Entradas.CantidadProducida) && Entradas.ProductoId >= 5;
+                // if (CantidadProducidoMayor)
+                // {
+                //     var disminuir = Productos.FirstOrDefault(p => p.ProductoId == Entradas.ProductoId);
+                //     disminuir.Existencia = disminuir.Existencia - (Entradas.CantidadProducida - disminuir.Existencia);
+                //     using var responseDetalleAgregado = await httpClient.PutAsJsonAsync<Productos>($"api/Productos/{disminuir.ProductoId}", disminuir);
+                // }
+
                 if (DetallesEliminados != null)
                 {
                     foreach (var item in DetallesEliminados)
@@ -255,7 +306,18 @@
                 notificationService.Notify(mensaje);
                 Nuevo();
             }
-        // }
+        }
+        else if (ValidacionEntro)
+        {
+            var mensaje = new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Warning,
+                    Summary = "Advertencia guardar ",
+                    Detail = "Antes de guardar debes de terminar de agregar los detalles faltantes para producir un producto mixto",
+                    Duration = 5_000
+                };
+            notificationService.Notify(mensaje);            
+        }
     }
     public  void Nuevo()
     {
@@ -291,7 +353,6 @@
             {
                 Entradas = entradasEncontrada;
                 PesoTotal = Entradas.EntredasDetalles.Sum(ed => ed.CantidadUtilizada);
-
                 StateHasChanged();
             }
         }
@@ -432,6 +493,7 @@
         MPP5 = false;
         MPP2 = false;
         MPC5 = false;
+        ValidacionEntro = false;
 
         if(Entradas.ProductoId == 5)
         {
@@ -439,7 +501,7 @@
             var pistacho = Entradas.EntredasDetalles.Where(p => p.ProductoId == 2).Sum(s => s.CantidadUtilizada);
             var pasas = Entradas.EntredasDetalles.Where(p => p.ProductoId == 3).Sum(s => s.CantidadUtilizada);
 
-            for(int i = 0; i < Entradas.CantidadProducida; i++)
+            for(int i = 0; i < Entradas.CantidadProducida; i++) 
             {
 
                 if (mani < 75.60)
@@ -483,7 +545,7 @@
                 {
                     Producidos = Productos.FirstOrDefault(p => p.ProductoId == 5);
                     Producidos.Existencia = Entradas.CantidadProducida;
-                    Entradas.EntredasDetalles.FirstOrDefault(e => e.ProductoId == 1);
+                    // Entradas.EntredasDetalles.FirstOrDefault(e => e.ProductoId == 1);
                     mani -= 75.60;
                     pistacho -= 75.60;
                     pasas -= 75.60;
@@ -491,6 +553,7 @@
                 }
 
             }
+            ValidacionEntro = true;
         }
 
         if (Entradas.ProductoId == 6)
@@ -516,14 +579,17 @@
                 }
                 if (pistacho < 75.60 )
                 {
-                    var mensaje = new NotificationMessage
-                        {
-                            Severity = NotificationSeverity.Error,
-                            Summary = "Pistacho ",
-                            Detail = $"No hay suficientes pistachos({(float)pistacho})",
-                            Duration = 5_000
-                        };
-                    notificationService.Notify(mensaje);
+                    if(pasas > 75.60)
+                    {
+                        var mensaje = new NotificationMessage
+                            {
+                                Severity = NotificationSeverity.Error,
+                                Summary = "Pistacho ",
+                                Detail = $"No hay suficientes pistachos({(float)pistacho})",
+                                Duration = 5_000
+                            };
+                        notificationService.Notify(mensaje);
+                    }                    
                     if (pasas < 75.60)
                     {
                         var mensajes = new NotificationMessage
@@ -550,7 +616,7 @@
                     notificationService.Notify(mensaje);
                 }
 
-                MPC5 = (mani >= 75.60 && (pistacho >= 75.60 || ciruelas >= 75.60) && pasas >= 75.60);
+                MPC5 = (mani >= 75.60 && (pistacho >= 75.60 || pasas >= 75.60) && ciruelas >= 75.60);
 
                 if (MPC5)
                 {
@@ -563,6 +629,7 @@
                 }
 
             }
+            ValidacionEntro = true;
         }
         if (Entradas.ProductoId == 7)
         {
@@ -611,17 +678,21 @@
 
                 if (MPP2)
                 {
-                    Producidos = Productos.FirstOrDefault(p => p.ProductoId == 5);
+                    Producidos = Productos.FirstOrDefault(p => p.ProductoId == 7);
                     Producidos.Existencia = Entradas.CantidadProducida;
-                    Entradas.EntredasDetalles.FirstOrDefault(e => e.ProductoId == 1);
                     mani -= 30.24;
                     pistacho -= 30.24;
                     pasas -= 30.24;
 
                 }
             }
+            ValidacionEntro = true;
         }
-        return MPC5 || MPP5 || MPP5;
+
+        if (Entradas.ProductoId < 5) // quito este if y no deja pasar sinque agregues un producido
+            return true;
+
+        return MPC5 || MPP5 || MPP2;
 
     }
     private async Task VerificarSeleccionadoProducion()
@@ -649,4 +720,5 @@
 
         return detallesNotNull;
     }
+    // public
 }
