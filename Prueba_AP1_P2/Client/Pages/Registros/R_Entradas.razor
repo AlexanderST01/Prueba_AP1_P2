@@ -405,7 +405,7 @@
             if (DetallesEliminados.Any(d => d.DetalleId == EntredasDetalle.DetalleId))
                 DetallesEliminados.Remove(EntredasDetalle);
 
-             if (Existe)
+            if (Existe)
                 DetallesAgregado.Add(EntredasDetalle);
 
             Entradas.EntredasDetalles.Add(EntredasDetalle);
@@ -429,21 +429,31 @@
 
     private async Task RemoveDatalle(EntredasDetalle detalle)
     {
-        var detalleEncontrado = Entradas.EntredasDetalles.FirstOrDefault(ed => ed.DetalleId == detalle.DetalleId);
-        if (detalleEncontrado != null)
-        {
-            var entradas = BuscarEntradas(detalleEncontrado.EntradaId);
-            detalle = detalleEncontrado;
-            EntredasDetalle = detalleEncontrado;
-            EntredasDetalle.ProductoId = detalleEncontrado.ProductoId;
+        // var detalleEncontrado = Entradas.EntredasDetalles.FirstOrDefault(ed => ed.DetalleId == detalle.DetalleId);
+        // if (detalleEncontrado != null)
+        // {
+            // var entradas = BuscarEntradas(detalleEncontrado.EntradaId);
+            // detalle = detalleEncontrado;
+            // EntredasDetalle = detalleEncontrado;
+            // EntredasDetalle.ProductoId = detalleEncontrado.ProductoId;
+            // Entradas.EntredasDetalles.Remove(detalle);
+            // PesoTotal = Entradas.EntredasDetalles.Sum(ed => ed.CantidadUtilizada);
+
+            // if (DetallesAgregado.Any(d => d.DetalleId == detalleEncontrado.DetalleId))
+            //     DetallesAgregado.Remove(detalleEncontrado);
+
+            // DetallesEliminados.Add(detalleEncontrado);
+
+            EntredasDetalle = detalle;
+            EntredasDetalle.ProductoId = detalle.ProductoId;
             Entradas.EntredasDetalles.Remove(detalle);
             PesoTotal = Entradas.EntredasDetalles.Sum(ed => ed.CantidadUtilizada);
 
-            if (DetallesAgregado.Any(d => d.DetalleId == detalleEncontrado.DetalleId))
-                DetallesAgregado.Remove(detalleEncontrado);
+        if (DetallesAgregado.Any(d => d.DetalleId == detalle.DetalleId))
+            DetallesAgregado.Remove(detalle);
 
-            DetallesEliminados.Add(detalleEncontrado);
-        }
+        DetallesEliminados.Add(detalle);
+        // }
         StateHasChanged();
 
     }
@@ -572,7 +582,7 @@
                             };
                         notificationService.Notify(mensaje);
                     }    
-                    
+
                     if (pasas < 75.60)
                     {
                         var mensajes = new NotificationMessage
@@ -666,6 +676,11 @@
                     mani -= 30.24;
                     pistacho -= 30.24;
                     pasas -= 30.24;
+
+                    // var reducirMani = Entradas.EntredasDetalles.FirstOrDefault(e => e.ProductoId == 1 && e.CantidadUtilizada > 30.24).CantidadUtilizada -= 30.24;
+                    // var reducirPistacho = Entradas.EntredasDetalles.FirstOrDefault(e => e.ProductoId == 2 && e.CantidadUtilizada > 30.24).CantidadUtilizada -= 30.24;
+                    // var reducirPasa = Entradas.EntredasDetalles.FirstOrDefault(e => e.ProductoId == 3 && e.CantidadUtilizada > 30.24).CantidadUtilizada -= 30.24;
+
 
                 }
             }
