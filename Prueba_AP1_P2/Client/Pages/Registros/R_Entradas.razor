@@ -363,6 +363,19 @@
         }
         else
         {
+            
+            var aumentar = Productos.FirstOrDefault(p => p.ProductoId == Entradas.ProductoId);
+            aumentar.Existencia = aumentar.Existencia - Entradas.CantidadProducida;
+            await httpClient.PutAsJsonAsync<Productos>($"api/Productos/{aumentar.ProductoId}", aumentar);         
+            
+            foreach (var item in  Entradas.EntredasDetalles)
+            {
+                var aumentarDetalle = Productos.FirstOrDefault(p => p.ProductoId == item.ProductoId);
+                aumentarDetalle.Existencia = aumentarDetalle.Existencia + item.CantidadUtilizada;
+                using var responseDetalleAgregado = await httpClient.PutAsJsonAsync<Productos>($"api/Productos/{aumentarDetalle.ProductoId}", aumentarDetalle);
+            }
+
+
             var mensaje = new NotificationMessage
                 {
                     Severity = NotificationSeverity.Success,
@@ -398,7 +411,6 @@
 
             var encontrado = await httpClient.GetFromJsonAsync<List<EntredasDetalle>>($"api/Entradas");
             var Existe = encontrado.Any(e => e.DetalleId == EntredasDetalle.DetalleId);
-            // var Existe = encontrado.Any(e => e.DetalleId == EntredasDetalle.EntradaId);
 
             EntredasDetalle.EntradaId = Entradas.EntradaId;
 
@@ -429,31 +441,16 @@
 
     private async Task RemoveDatalle(EntredasDetalle detalle)
     {
-        // var detalleEncontrado = Entradas.EntredasDetalles.FirstOrDefault(ed => ed.DetalleId == detalle.DetalleId);
-        // if (detalleEncontrado != null)
-        // {
-            // var entradas = BuscarEntradas(detalleEncontrado.EntradaId);
-            // detalle = detalleEncontrado;
-            // EntredasDetalle = detalleEncontrado;
-            // EntredasDetalle.ProductoId = detalleEncontrado.ProductoId;
-            // Entradas.EntredasDetalles.Remove(detalle);
-            // PesoTotal = Entradas.EntredasDetalles.Sum(ed => ed.CantidadUtilizada);
-
-            // if (DetallesAgregado.Any(d => d.DetalleId == detalleEncontrado.DetalleId))
-            //     DetallesAgregado.Remove(detalleEncontrado);
-
-            // DetallesEliminados.Add(detalleEncontrado);
-
-            EntredasDetalle = detalle;
-            EntredasDetalle.ProductoId = detalle.ProductoId;
-            Entradas.EntredasDetalles.Remove(detalle);
-            PesoTotal = Entradas.EntredasDetalles.Sum(ed => ed.CantidadUtilizada);
+        EntredasDetalle = detalle;
+        EntredasDetalle.ProductoId = detalle.ProductoId;
+        Entradas.EntredasDetalles.Remove(detalle);
+        PesoTotal = Entradas.EntredasDetalles.Sum(ed => ed.CantidadUtilizada);
 
         if (DetallesAgregado.Any(d => d.DetalleId == detalle.DetalleId))
             DetallesAgregado.Remove(detalle);
 
         DetallesEliminados.Add(detalle);
-        // }
+        
         StateHasChanged();
 
     }
@@ -538,7 +535,7 @@
 
                 if (MPP5)
                 {
-                    Producidos = Productos.FirstOrDefault(p => p.ProductoId == 5);
+                    Producidos = Productos.FirstOrDefault(p => p.ProductoId == 5)!;
                     Producidos.Existencia = Entradas.CantidadProducida;
                     mani -= 75.60;
                     pistacho -= 75.60;
@@ -612,7 +609,7 @@
 
                 if (MPC5)
                 {
-                    Producidos = Productos.FirstOrDefault(p => p.ProductoId == 5);
+                    Producidos = Productos.FirstOrDefault(p => p.ProductoId == 5)!;
                     Producidos.Existencia = Entradas.CantidadProducida;
                     mani -= 75.60;
                     pistacho -= 75.60;
@@ -676,12 +673,6 @@
                     mani -= 30.24;
                     pistacho -= 30.24;
                     pasas -= 30.24;
-
-                    // var reducirMani = Entradas.EntredasDetalles.FirstOrDefault(e => e.ProductoId == 1 && e.CantidadUtilizada > 30.24).CantidadUtilizada -= 30.24;
-                    // var reducirPistacho = Entradas.EntredasDetalles.FirstOrDefault(e => e.ProductoId == 2 && e.CantidadUtilizada > 30.24).CantidadUtilizada -= 30.24;
-                    // var reducirPasa = Entradas.EntredasDetalles.FirstOrDefault(e => e.ProductoId == 3 && e.CantidadUtilizada > 30.24).CantidadUtilizada -= 30.24;
-
-
                 }
             }
             ValidacionEntro = true;
