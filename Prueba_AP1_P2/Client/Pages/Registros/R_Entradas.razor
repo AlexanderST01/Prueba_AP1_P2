@@ -47,7 +47,7 @@
                                 <div class="row">
                                     <div class="col-md-6">
                                         <label>Producto: </label>
-                                        <InputSelect @bind-Value="EntredasDetalle.ProductoId" class="form-select">                                    
+                                        <InputSelect @bind-Value="EntradasDetalle.ProductoId" class="form-select">                                    
                                         @foreach (var item in Productos)
                                             {
                                                 @if(item.Tipo == 0)
@@ -56,16 +56,16 @@
                                                 }
                                             }
                                         </InputSelect>
-                                        <ValidationMessage For="@(() => EntredasDetalle.DetalleId)" />
+                                        <ValidationMessage For="@(() => EntradasDetalle.DetalleId)" />
                                     </div>
                                     <div class="col-md-5">
                                         <label>Cantidad</label>
                                         <div class="row"
                                             <div class="col">
                                                 <div class="input-group">
-                                                    <InputNumber @bind-Value="EntredasDetalle.CantidadUtilizada" class="form-control"></InputNumber>
+                                                    <InputNumber @bind-Value="EntradasDetalle.CantidadUtilizada" class="form-control"></InputNumber>
                                                     <button type="button" class="btn btn-success" @onclick="AgregarDetalle">Agregar <i class="oi oi-plus" /></button>
-                                                    <ValidationMessage For="@(() => EntredasDetalle.CantidadUtilizada)" />
+                                                    <ValidationMessage For="@(() => EntradasDetalle.CantidadUtilizada)" />
                                                 </div>
                                             </div>
                                         </div>
@@ -82,7 +82,7 @@
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                @foreach (var item in this.Entradas.EntredasDetalles)
+                                                @foreach (var item in this.Entradas.EntradasDetalles)
                                                 {
                                                     <tr>
                                                     <td>@item.ProductoId</td>
@@ -120,7 +120,7 @@
                                         }
                                     }
                                 </InputSelect>
-                                <ValidationMessage For="@(() => EntredasDetalle.DetalleId)" />
+                                <ValidationMessage For="@(() => EntradasDetalle.DetalleId)" />
                             </div>
                             <div class="col-2">
                                 <InputNumber @bind-Value="Entradas.CantidadProducida" class="form-control" @oninput="ValidarProducido"></InputNumber>
@@ -144,28 +144,27 @@
 @code {
     [Parameter]
     public int EntradaId { get; set; }
-    public EntredasDetalle EntredasDetalle { get; set; } = new();
+    public EntredasDetalle EntradasDetalle { get; set; } = new();
     public Entradas Entradas { get; set; } = new Entradas();
     public List<Productos> Productos { get; set; } = new List<Productos>();
     public Productos Producidos { get; set; } = new Productos();
-    public List<Entradas> ListEntradas { get; set; } = new();
+    // public List<Entradas> ListEntradas { get; set; } = new();
     public List<EntredasDetalle> DetallesEliminados { get; set; } = new();
     public List<EntredasDetalle> DetallesAgregado { get; set; } = new();
-    public List<EntredasDetalle> ReduccionProductos { get; set; } = new();
+    // public List<EntredasDetalle> ReduccionProductos { get; set; } = new();
     public bool MPP5 { get; set; } = false;
     public bool MPP2 { get; set; } = false;
     public bool MPC5 { get; set; } = false;
     public bool ValidacionEntro { get; set; } = false;
     public double PesoTotal { get; set; }
-    public int id = 0;
 
     protected override  async void OnInitialized()
     {
-        var productos = await httpClient.GetFromJsonAsync<List<Productos>>("api/Productos");
+        var productos = await httpClient.GetFromJsonAsync<List<Productos>>("api/Productos"); 
         if (productos is not null)
         {
             Productos = productos;
-            EntredasDetalle.ProductoId = productos.First().ProductoId;
+            EntradasDetalle.ProductoId = productos.First().ProductoId;
         }
 
         if (EntradaId > 0)
@@ -226,8 +225,6 @@
                 return;
             }
             var entradasDevuelta = await response.Content.ReadFromJsonAsync<Entradas>();
-
-            var cambiosCatidad = entradasDevuelta.CantidadProducida == Entradas.CantidadProducida;
 
             if (entradasDevuelta is not null)//lo puedo quitar
             {
@@ -298,7 +295,7 @@
         MPP2 = false;
         MPC5 = false;
         Entradas = new();
-        EntredasDetalle = new();
+        EntradasDetalle = new();
         DetallesAgregado = new();
 
         var mensaje = new NotificationMessage
@@ -328,7 +325,7 @@
             if(entradasEncontrada != null)
             {
                 Entradas = entradasEncontrada;
-                PesoTotal = Entradas.EntredasDetalles.Sum(ed => ed.CantidadUtilizada);
+                PesoTotal = Entradas.EntradasDetalles.Sum(ed => ed.CantidadUtilizada);
                 StateHasChanged();
             }
         }
@@ -350,7 +347,6 @@
     {
         var producidoHaCambido = await httpClient.GetFromJsonAsync<List<Entradas>>("api/Entradas");
 
-        // if (await ValidarProducido())
         if (producidoHaCambido.FirstOrDefault(p => p.EntradaId == Entradas.EntradaId).CantidadProducida == Entradas.CantidadProducida)
         {
             using var response = await httpClient.DeleteAsync($"api/Entradas/{Entradas.EntradaId}");
@@ -373,7 +369,7 @@
                 aumentar.Existencia = aumentar.Existencia - Entradas.CantidadProducida;
                 await httpClient.PutAsJsonAsync<Productos>($"api/Productos/{aumentar.ProductoId}", aumentar);
 
-                foreach (var item in Entradas.EntredasDetalles)
+                foreach (var item in Entradas.EntradasDetalles)
                 {
                     var aumentarDetalle = Productos.FirstOrDefault(p => p.ProductoId == item.ProductoId);
                     aumentarDetalle.Existencia = aumentarDetalle.Existencia + item.CantidadUtilizada;
@@ -409,16 +405,16 @@
     {
         if (ValidarDetalle())
         {
-            var producto = await BuscarProductos(EntredasDetalle.ProductoId);
+            var producto = await BuscarProductos(EntradasDetalle.ProductoId);
             if(producto != null)
             {
-                if (EntredasDetalle.CantidadUtilizada > producto.Existencia)
+                if (EntradasDetalle.CantidadUtilizada > producto.Existencia)
                 {
                     var mensaje = new NotificationMessage
                                 {
                                     Severity = NotificationSeverity.Error,
                                     Summary = "Error",
-                                    Detail = $"En el inventario no hay suficiente para abasteser {producto.Descripcion}: {EntredasDetalle.CantidadUtilizada}",
+                                    Detail = $"En el inventario no hay suficiente para abasteser {producto.Descripcion}: {EntradasDetalle.CantidadUtilizada}",
                                     Duration = 4_000
                                 };
                     notificationService.Notify(mensaje);
@@ -427,19 +423,19 @@
             }
 
             var encontrado = await httpClient.GetFromJsonAsync<List<EntredasDetalle>>($"api/Entradas");
-            var Existe = encontrado.Any(e => e.DetalleId == EntredasDetalle.DetalleId);
+            var Existe = encontrado.Any(e => e.DetalleId == EntradasDetalle.DetalleId);
 
-            EntredasDetalle.EntradaId = Entradas.EntradaId;
+            EntradasDetalle.EntradaId = Entradas.EntradaId;
 
-            if (DetallesEliminados.Any(d => d.DetalleId == EntredasDetalle.DetalleId))
-                DetallesEliminados.Remove(EntredasDetalle);
+            if (DetallesEliminados.Any(d => d.DetalleId == EntradasDetalle.DetalleId))
+                DetallesEliminados.Remove(EntradasDetalle);
 
             if (Existe)
-                DetallesAgregado.Add(EntredasDetalle);
+                DetallesAgregado.Add(EntradasDetalle);
 
-            Entradas.EntredasDetalles.Add(EntredasDetalle);
-            EntredasDetalle = new EntredasDetalle();
-            PesoTotal = Entradas.EntredasDetalles.Sum(ed => ed.CantidadUtilizada);
+            Entradas.EntradasDetalles.Add(EntradasDetalle);
+            EntradasDetalle = new EntredasDetalle();
+            PesoTotal = Entradas.EntradasDetalles.Sum(ed => ed.CantidadUtilizada);
             ValidarProducido();
         }
         StateHasChanged();
@@ -458,10 +454,10 @@
 
     private async Task RemoveDatalle(EntredasDetalle detalle)
     {
-        EntredasDetalle = detalle;
-        EntredasDetalle.ProductoId = detalle.ProductoId;
-        Entradas.EntredasDetalles.Remove(detalle);
-        PesoTotal = Entradas.EntredasDetalles.Sum(ed => ed.CantidadUtilizada);
+        EntradasDetalle = detalle;
+        EntradasDetalle.ProductoId = detalle.ProductoId;
+        Entradas.EntradasDetalles.Remove(detalle);
+        PesoTotal = Entradas.EntradasDetalles.Sum(ed => ed.CantidadUtilizada);
 
         if (DetallesAgregado.Any(d => d.DetalleId == detalle.DetalleId))
             DetallesAgregado.Remove(detalle);
@@ -506,9 +502,9 @@
 
         if(Entradas.ProductoId == 5)
         {
-            var mani = Entradas.EntredasDetalles.Where(p => p.ProductoId == 1).Sum(s => s.CantidadUtilizada);
-            var pistacho = Entradas.EntredasDetalles.Where(p => p.ProductoId == 2).Sum(s => s.CantidadUtilizada);
-            var pasas = Entradas.EntredasDetalles.Where(p => p.ProductoId == 3).Sum(s => s.CantidadUtilizada);
+            var mani = Entradas.EntradasDetalles.Where(p => p.ProductoId == 1).Sum(s => s.CantidadUtilizada);
+            var pistacho = Entradas.EntradasDetalles.Where(p => p.ProductoId == 2).Sum(s => s.CantidadUtilizada);
+            var pasas = Entradas.EntradasDetalles.Where(p => p.ProductoId == 3).Sum(s => s.CantidadUtilizada);
 
             for(int i = 0; i < Entradas.CantidadProducida; i++) 
             {
@@ -568,10 +564,10 @@
 
         if (Entradas.ProductoId == 6)
         {
-            var mani = Entradas.EntredasDetalles.Where(m => m.ProductoId == 1).Sum(s => s.CantidadUtilizada);
-            var pistacho = Entradas.EntredasDetalles.Where(m => m.ProductoId == 2).Sum(s => s.CantidadUtilizada);
-            var pasas = Entradas.EntredasDetalles.Where(m => m.ProductoId == 3).Sum(s => s.CantidadUtilizada);
-            var ciruelas = Entradas.EntredasDetalles.Where(m => m.ProductoId == 4).Sum(s => s.CantidadUtilizada);
+            var mani = Entradas.EntradasDetalles.Where(m => m.ProductoId == 1).Sum(s => s.CantidadUtilizada);
+            var pistacho = Entradas.EntradasDetalles.Where(m => m.ProductoId == 2).Sum(s => s.CantidadUtilizada);
+            var pasas = Entradas.EntradasDetalles.Where(m => m.ProductoId == 3).Sum(s => s.CantidadUtilizada);
+            var ciruelas = Entradas.EntradasDetalles.Where(m => m.ProductoId == 4).Sum(s => s.CantidadUtilizada);
 
             for (int i = 0; i < Entradas.CantidadProducida; i++)
             {
@@ -606,7 +602,7 @@
                         var mensajes = new NotificationMessage
                             {
                                 Severity = NotificationSeverity.Error,
-                                Summary = "Pistacho o Posas",
+                                Summary = "Pistacho o Pasas",
                                 Detail = $"Te faltan gramos de pasas para el producto mixto",
                                 Duration = 5_000
                             };
@@ -647,9 +643,9 @@
 
         if (Entradas.ProductoId == 7)
         {
-            var mani = Entradas.EntredasDetalles.Where(p => p.ProductoId == 1).Sum(s => s.CantidadUtilizada);
-            var pistacho = Entradas.EntredasDetalles.Where(p => p.ProductoId == 2).Sum(s => s.CantidadUtilizada);
-            var pasas = Entradas.EntredasDetalles.Where(p => p.ProductoId == 3).Sum(s => s.CantidadUtilizada);
+            var mani = Entradas.EntradasDetalles.Where(p => p.ProductoId == 1).Sum(s => s.CantidadUtilizada);
+            var pistacho = Entradas.EntradasDetalles.Where(p => p.ProductoId == 2).Sum(s => s.CantidadUtilizada);
+            var pasas = Entradas.EntradasDetalles.Where(p => p.ProductoId == 3).Sum(s => s.CantidadUtilizada);
 
             for (int i = 0; i < Entradas.CantidadProducida; i++)
             {
@@ -726,7 +722,7 @@
 
     public bool ValidarDetalle()
     {
-        var detallesNotNull = EntredasDetalle.ProductoId > 0 && EntredasDetalle.CantidadUtilizada > 0;
+        var detallesNotNull = EntradasDetalle.ProductoId > 0 && EntradasDetalle.CantidadUtilizada > 0;
         if (!detallesNotNull)
         {
             var mensaje = new NotificationMessage
