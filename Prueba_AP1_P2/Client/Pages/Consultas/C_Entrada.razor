@@ -100,7 +100,7 @@
     </div>
 </div>
 
-@code {
+@code {  
     public List<Entradas> Entradas { get; set; } = new List<Entradas>();
 
     public int ID { get; set; }
@@ -123,12 +123,12 @@
             case 0:
                 if (entradasAux.EntradaId == 0)
                 {
-                    Entradas = (await httpClient.GetFromJsonAsync<List<Entradas>>($"api/Entradas")).Where(t => t.Fecha >= Desde.Date && t.Fecha <= Hasta).ToList();
+                    Entradas = (await httpClient.GetFromJsonAsync<List<Entradas>>($"api/Entradas"))!.Where(t => t.Fecha >= Desde.Date && t.Fecha <= Hasta).ToList();
                     StateHasChanged();
                 }
                 else
                 {
-                    Entradas = (await httpClient.GetFromJsonAsync<List<Entradas>>($"api/Entradas")).Where(t => t.EntradaId == entradasAux.EntradaId && t.Fecha >= Desde.Date && t.Fecha <= Hasta).ToList();
+                    Entradas = (await httpClient.GetFromJsonAsync<List<Entradas>>($"api/Entradas"))!.Where(t => t.EntradaId == entradasAux.EntradaId && t.Fecha >= Desde.Date && t.Fecha <= Hasta).ToList();
                     StateHasChanged();
                 }
                 break;
@@ -136,12 +136,12 @@
             case 1:
                 if ((entradasAux.CantidadProducida <= 0))
                 {
-                    Entradas = (await httpClient.GetFromJsonAsync<List<Entradas>>($"api/Entradas")).Where(t => t.Fecha >= Desde.Date && t.Fecha <= Hasta).ToList();
+                    Entradas = (await httpClient.GetFromJsonAsync<List<Entradas>>($"api/Entradas"))!.Where(t => t.Fecha >= Desde.Date && t.Fecha <= Hasta).ToList();
                     StateHasChanged();
                 }
                 else
                 {
-                    Entradas = (await httpClient.GetFromJsonAsync<List<Entradas>>($"api/Entradas")).Where(t => t.CantidadProducida == entradasAux.CantidadProducida
+                    Entradas = (await httpClient.GetFromJsonAsync<List<Entradas>>($"api/Entradas"))!.Where(t => t.CantidadProducida == entradasAux.CantidadProducida
                     && t.Fecha >= Desde.Date && t.Fecha <= Hasta).ToList();
                     StateHasChanged();
                 }
@@ -150,12 +150,12 @@
             case 2:
                 if (string.IsNullOrEmpty(entradasAux.Concepto))
                 {
-                    Entradas = (await httpClient.GetFromJsonAsync<List<Entradas>>($"api/Entradas")).Where(t => t.Fecha >= Desde.Date && t.Fecha <= Hasta).ToList();
+                    Entradas = (await httpClient.GetFromJsonAsync<List<Entradas>>($"api/Entradas"))!.Where(t => t.Fecha >= Desde.Date && t.Fecha <= Hasta).ToList();
                     StateHasChanged();
                 }
                 else
                 {
-                    Entradas = (await httpClient.GetFromJsonAsync<List<Entradas>>($"api/Entradas")).Where(t => t.Concepto
+                    Entradas = (await httpClient.GetFromJsonAsync<List<Entradas>>($"api/Entradas"))!.Where(t => t.Concepto
                         .Contains(entradasAux.Concepto, StringComparison.OrdinalIgnoreCase)
                         && t.Fecha >= Desde.Date && t.Fecha <= Hasta).ToList();
                     StateHasChanged();
@@ -165,12 +165,12 @@
             case 3:
                 if ((entradasAux.PesoTotal <= 0))
                 {
-                    Entradas = (await httpClient.GetFromJsonAsync<List<Entradas>>($"api/Entradas")).Where(t => t.Fecha >= Desde.Date && t.Fecha <= Hasta).ToList();
+                    Entradas = (await httpClient.GetFromJsonAsync<List<Entradas>>($"api/Entradas"))!.Where(t => t.Fecha >= Desde.Date && t.Fecha <= Hasta).ToList();
                     StateHasChanged();
                 }
                 else
                 {
-                    Entradas = (await httpClient.GetFromJsonAsync<List<Entradas>>($"api/Entradas")).Where(t => t.PesoTotal == entradasAux.PesoTotal
+                    Entradas = (await httpClient.GetFromJsonAsync<List<Entradas>>($"api/Entradas"))!.Where(t => t.PesoTotal == entradasAux.PesoTotal
                     && t.Fecha >= Desde.Date && t.Fecha <= Hasta).ToList();
                     StateHasChanged();
                 }
@@ -179,12 +179,12 @@
             case 4:
                 if (entradasAux.ProductoId <= 0)
                 {
-                    Entradas = (await httpClient.GetFromJsonAsync<List<Entradas>>($"api/Entradas")).Where(t => t.Fecha >= Desde.Date && t.Fecha <= Hasta).ToList();
+                    Entradas = (await httpClient.GetFromJsonAsync<List<Entradas>>($"api/Entradas"))!.Where(t => t.Fecha >= Desde.Date && t.Fecha <= Hasta).ToList();
                     StateHasChanged();
                 }
                 else
                 {
-                    Entradas = (await httpClient.GetFromJsonAsync<List<Entradas>>($"api/Entradas")).Where(t => t.ProductoId == entradasAux.ProductoId
+                    Entradas = (await httpClient.GetFromJsonAsync<List<Entradas>>($"api/Entradas"))!.Where(t => t.ProductoId == entradasAux.ProductoId
                         && t.Fecha >= Desde.Date && t.Fecha <= Hasta).ToList();
                     StateHasChanged();
                 }

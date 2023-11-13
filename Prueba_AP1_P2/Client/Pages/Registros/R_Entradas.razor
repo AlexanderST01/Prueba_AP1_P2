@@ -60,7 +60,7 @@
                                     </div>
                                     <div class="col-md-5">
                                         <label>Cantidad</label>
-                                        <div class="row"
+                                        <div class="row">
                                             <div class="col">
                                                 <div class="input-group">
                                                     <InputNumber @bind-Value="EntradasDetalle.CantidadUtilizada" class="form-control"></InputNumber>
@@ -177,12 +177,12 @@
 
     public async Task Guardar()
     {
-        if (await ValidarProducido()) ///arreglar que pueda guardar sin necesidad de agregar un detalle
+        if (await ValidarProducido())
         {
             Entradas.PesoTotal = PesoTotal;
 
             var listEntradas = await httpClient.GetFromJsonAsync<List<Entradas>>("api/Entradas");
-            var entradaAux = listEntradas.FirstOrDefault(e => e.EntradaId == Entradas.EntradaId);
+            var entradaAux = listEntradas!.FirstOrDefault(e => e.EntradaId == Entradas.EntradaId);
             var ListProductos = await httpClient.GetFromJsonAsync<List<Productos>>("api/Productos");
 
             if(entradaAux is not null)
@@ -190,90 +190,85 @@
                 var CantidadProducidoMayor = (entradaAux.CantidadProducida < Entradas.CantidadProducida) && Entradas.ProductoId >= 5;
                 if (CantidadProducidoMayor)
                 {
-                    var aumentrar = ListProductos.FirstOrDefault(p => p.ProductoId == Entradas.ProductoId);
-                    aumentrar.Existencia = aumentrar.Existencia + (Entradas.CantidadProducida - entradaAux.CantidadProducida);
+                    var aumentrar = ListProductos!.FirstOrDefault(p => p.ProductoId == Entradas.ProductoId);
+                    aumentrar!.Existencia = aumentrar.Existencia + (Entradas.CantidadProducida - entradaAux.CantidadProducida);
                     using var responseDetalleAgregado = await httpClient.PutAsJsonAsync<Productos>($"api/Productos/{aumentrar.ProductoId}", aumentrar);
                 }
 
                 var CantidadProducidoMenor = (entradaAux.CantidadProducida > Entradas.CantidadProducida) && Entradas.ProductoId >= 5;
                 if (CantidadProducidoMenor)
                 {
-                    var disminuir = ListProductos.FirstOrDefault(p => p.ProductoId == Entradas.ProductoId);
-                    disminuir.Existencia = disminuir.Existencia - (entradaAux.CantidadProducida - Entradas.CantidadProducida);
+                    var disminuir = ListProductos!.FirstOrDefault(p => p.ProductoId == Entradas.ProductoId);
+                    disminuir!.Existencia = disminuir.Existencia - (entradaAux.CantidadProducida - Entradas.CantidadProducida);
                     using var responseDetalleAgregado = await httpClient.PutAsJsonAsync<Productos>($"api/Productos/{disminuir.ProductoId}", disminuir);
                 }
             }
 
             else if(Entradas.ProductoId >=5)
             {
-                var aumentar = ListProductos.FirstOrDefault(p => p.ProductoId == Entradas.ProductoId);
-                aumentar.Existencia = aumentar.Existencia + Entradas.CantidadProducida;
+                var aumentar = ListProductos!.FirstOrDefault(p => p.ProductoId == Entradas.ProductoId);
+                aumentar!.Existencia = aumentar.Existencia + Entradas.CantidadProducida;
                 using var responseDetalleAgregado = await httpClient.PutAsJsonAsync<Productos>($"api/Productos/{aumentar.ProductoId}", aumentar);
             }
 
             using var response = await httpClient.PostAsJsonAsync("api/Entradas", Entradas);
             if (!response.IsSuccessStatusCode)
             {
-                var mensaje = new NotificationMessage
+                var mensaje2 = new NotificationMessage
                     {
                         Severity = NotificationSeverity.Error,
                         Summary = "Erro ",
                         Detail = "Entrada no guardada",
                         Duration = 5_000
                     };
-                notificationService.Notify(mensaje);
+                notificationService.Notify(mensaje2);
                 return;
             }
+
             var entradasDevuelta = await response.Content.ReadFromJsonAsync<Entradas>();
-
-            if (entradasDevuelta is not null)//lo puedo quitar
+            
+            foreach (var item in DetallesEliminados)
             {
-                if (DetallesEliminados != null)//lo puedo quitar
+                if (DetallesAgregado.Any(d => d.DetalleId == item.DetalleId))
                 {
-                    foreach (var item in DetallesEliminados)
-                    {
-                        if (DetallesAgregado.Any(d => d.DetalleId == item.DetalleId))
-                        {
-                            DetallesEliminados.Remove(item);
-                            DetallesAgregado.Remove(item);
-                        }
-                    }
+                    DetallesEliminados.Remove(item);
+                    DetallesAgregado.Remove(item);
                 }
-
-                Entradas = entradasDevuelta;
-
-                if (DetallesEliminados.Count > 0)
-                {
-                    foreach (var item in DetallesEliminados)
-                    {
-                        await httpClient.DeleteAsync($"api/Entradas/DeleteDetalles/{item.DetalleId}");
-                        var disminuir = Productos.FirstOrDefault(p => p.ProductoId == item.ProductoId);
-                        disminuir.Existencia = disminuir.Existencia + item.CantidadUtilizada;
-                        using var responseDetalleEliminado = await httpClient.PutAsJsonAsync<Productos>($"api/Productos/{disminuir.ProductoId}", disminuir);
-                    }
-                }
-
-                if (DetallesAgregado.Count > 0)
-                {
-                    foreach (var item in DetallesAgregado)
-                    {
-                        var disminuir = Productos.FirstOrDefault(p => p.ProductoId == item.ProductoId);
-                        disminuir.Existencia = disminuir.Existencia - item.CantidadUtilizada;
-                        using var responseDetalleAgregado = await httpClient.PutAsJsonAsync<Productos>($"api/Productos/{disminuir.ProductoId}", disminuir);
-                    }
-                }
-
-                StateHasChanged();
-                var mensaje = new NotificationMessage
-                    {
-                        Severity = NotificationSeverity.Success,
-                        Summary = "Guardado ",
-                        Detail = "Entradas guardado",
-                        Duration = 5_000
-                    };
-                notificationService.Notify(mensaje);
-                Nuevo();
             }
+
+            Entradas = entradasDevuelta!;
+
+            if (DetallesEliminados!.Count > 0)
+            {
+                foreach (var item in DetallesEliminados)
+                {
+                    await httpClient.DeleteAsync($"api/Entradas/DeleteDetalles/{item.DetalleId}");
+                    var aumentar = Productos.FirstOrDefault(p => p.ProductoId == item.ProductoId);
+                    aumentar!.Existencia = aumentar.Existencia + item.CantidadUtilizada;
+                    using var responseDetalleEliminado = await httpClient.PutAsJsonAsync<Productos>($"api/Productos/{aumentar.ProductoId}", aumentar);
+                }
+            }
+
+            if (DetallesAgregado.Count > 0)
+            {
+                foreach (var item in DetallesAgregado)
+                {
+                    var disminuir = Productos.FirstOrDefault(p => p.ProductoId == item.ProductoId);
+                    disminuir!.Existencia = disminuir.Existencia - item.CantidadUtilizada;
+                    using var responseDetalleAgregado = await httpClient.PutAsJsonAsync<Productos>($"api/Productos/{disminuir.ProductoId}", disminuir);
+                }
+            }
+
+            StateHasChanged();
+            var mensaje = new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = "Guardado ",
+                    Detail = "Entradas guardado",
+                    Duration = 5_000
+                };
+            notificationService.Notify(mensaje);
+            Nuevo();
         }
 
         else if (ValidacionEntro)
@@ -316,7 +311,7 @@
     {
         DetallesAgregado = new();
         DetallesEliminados = new();
-        var entradasNotNull = (await httpClient.GetFromJsonAsync<List<Entradas>>($"api/Entradas"))
+        var entradasNotNull = (await httpClient.GetFromJsonAsync<List<Entradas>>($"api/Entradas"))!
         .ToList().Any(e => e.EntradaId == Entradas.EntradaId);
 
         if(entradasNotNull)
@@ -347,7 +342,7 @@
     {
         var producidoHaCambido = await httpClient.GetFromJsonAsync<List<Entradas>>("api/Entradas");
 
-        if (producidoHaCambido.FirstOrDefault(p => p.EntradaId == Entradas.EntradaId).CantidadProducida == Entradas.CantidadProducida)
+        if (producidoHaCambido!.FirstOrDefault(p => p.EntradaId == Entradas.EntradaId)!.CantidadProducida == Entradas.CantidadProducida)
         {
             using var response = await httpClient.DeleteAsync($"api/Entradas/{Entradas.EntradaId}");
             if (!response.IsSuccessStatusCode)
@@ -366,13 +361,13 @@
             {
 
                 var aumentar = Productos.FirstOrDefault(p => p.ProductoId == Entradas.ProductoId);
-                aumentar.Existencia = aumentar.Existencia - Entradas.CantidadProducida;
+                aumentar!.Existencia = aumentar.Existencia - Entradas.CantidadProducida;
                 await httpClient.PutAsJsonAsync<Productos>($"api/Productos/{aumentar.ProductoId}", aumentar);
 
                 foreach (var item in Entradas.EntradasDetalles)
                 {
                     var aumentarDetalle = Productos.FirstOrDefault(p => p.ProductoId == item.ProductoId);
-                    aumentarDetalle.Existencia = aumentarDetalle.Existencia + item.CantidadUtilizada;
+                    aumentarDetalle!.Existencia = aumentarDetalle.Existencia + item.CantidadUtilizada;
                     using var responseDetalleAgregado = await httpClient.PutAsJsonAsync<Productos>($"api/Productos/{aumentarDetalle.ProductoId}", aumentarDetalle);
                 }
 
@@ -423,7 +418,7 @@
             }
 
             var encontrado = await httpClient.GetFromJsonAsync<List<EntredasDetalle>>($"api/Entradas");
-            var Existe = encontrado.Any(e => e.DetalleId == EntradasDetalle.DetalleId);
+            var Existe = encontrado!.Any(e => e.DetalleId == EntradasDetalle.DetalleId);
 
             EntradasDetalle.EntradaId = Entradas.EntradaId;
 
@@ -436,7 +431,7 @@
             Entradas.EntradasDetalles.Add(EntradasDetalle);
             EntradasDetalle = new EntredasDetalle();
             PesoTotal = Entradas.EntradasDetalles.Sum(ed => ed.CantidadUtilizada);
-            ValidarProducido();
+            await ValidarProducido();
         }
         StateHasChanged();
     }
@@ -468,18 +463,6 @@
 
     }
 
-    public async Task<string> ObternerDescripcionAsync (int Id)
-    {
-        var prod = await httpClient.GetFromJsonAsync<Productos>($"api/Productos/{Id}");
-        return prod.Descripcion;
-    }
-
-    public async Task<int> ObtenerProductoId(int detalleId)
-    {
-        var detalle = await httpClient.GetFromJsonAsync<List<EntredasDetalle>>("api/Entradas");
-        return detalle.Where(ed => ed.DetalleId == detalleId).FirstOrDefault().ProductoId;
-    }
-
     private async Task<Productos> BuscarProductos(int ProductoId)
     {
         var producto = await httpClient.GetFromJsonAsync<Productos>($"api/Productos/{ProductoId}");
@@ -490,7 +473,7 @@
     public string? ObtenerDescripcion(int Id)
     {
         var productos = Productos.FirstOrDefault(t => t.ProductoId == Id);
-        return productos.Descripcion;
+        return productos!.Descripcion;
     }
 
     public async Task<bool> ValidarProducido()
@@ -689,8 +672,8 @@
 
                 if (MPP2)
                 {
-                    Producidos = Productos.FirstOrDefault(p => p.ProductoId == 7);
-                    Producidos.Existencia = Entradas.CantidadProducida;
+                    Producidos = Productos.FirstOrDefault(p => p.ProductoId == 7)!;
+                    Producidos!.Existencia = Entradas.CantidadProducida;
                     mani -= 30.24;
                     pistacho -= 30.24;
                     pasas -= 30.24;
@@ -717,7 +700,7 @@
 
         Entradas.CantidadProducida = 0;
 
-        ValidarProducido();
+        await ValidarProducido();
     }
 
     public bool ValidarDetalle()
@@ -734,7 +717,6 @@
                 };
             notificationService.Notify(mensaje);
         }
-
         return detallesNotNull;
     }
 }

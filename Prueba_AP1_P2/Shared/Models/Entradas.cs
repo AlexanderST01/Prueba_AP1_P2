@@ -17,7 +17,7 @@ namespace Prueba_AP1_P2.Shared.Models
         public DateTime Fecha { get; set; } = DateTime.Now;
         [Required(ErrorMessage = "El campo es obligatorio")]
         [StringLength(100,ErrorMessage = "El campo concepto no debe ser mayor a 100 caracteres")]
-        public string Concepto { get; set; }
+        public string? Concepto { get; set; }
         public double PesoTotal { get; set; }
         public int ProductoId { get; set; }
         public double CantidadProducida { get; set; }
