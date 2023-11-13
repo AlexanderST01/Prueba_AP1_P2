@@ -41,7 +41,7 @@ namespace Prueba_AP1_P2.Server.Controllers
               return NotFound();
           }
             var entradas = await _context.Entradas
-                .Include(e => e.EntredasDetalles)
+                .Include(e => e.EntradasDetalles)
                 .Where(e => e.EntradaId == id)
                 .FirstOrDefaultAsync();
 
@@ -96,28 +96,6 @@ namespace Prueba_AP1_P2.Server.Controllers
 
             await _context.SaveChangesAsync();
 
-           // var entradaAnterior = _context.Entradas.Include(e => e.EntredasDetalles).AsNoTracking()
-           //.FirstOrDefault(e => e.EntradaId == entradas.EntradaId);
-
-           // if (entradaAnterior != null && entradaAnterior.EntredasDetalles != null)
-           // {
-           //     foreach (var productoConsumido in entradaAnterior.EntredasDetalles)
-           //     {
-           //         if (productoConsumido != null)
-           //         {
-           //             var producto = _context.Productos.Find(productoConsumido.ProductoId);
-
-           //             if (producto != null)
-           //             {
-           //                 producto.Existencia -= productoConsumido.CantidadUtilizada;
-           //                 _context.Productos.Update(producto);
-           //                 await _context.SaveChangesAsync();
-           //                 _context.Entry(producto).State = EntityState.Detached;
-           //             }
-           //         }
-           //     }
-           // }
-
             return Ok(entradas);
         }
                                         
@@ -147,13 +125,13 @@ namespace Prueba_AP1_P2.Server.Controllers
             {
                 return BadRequest();
             }
-            var entradas = await _context.EntredasDetalles.FirstOrDefaultAsync(td => td.DetalleId == id);
+            var entradas = await _context.EntradasDetalles.FirstOrDefaultAsync(td => td.DetalleId == id);
             if (entradas is null)
             {
                 return NotFound();
             }
 
-            _context.EntredasDetalles.Remove(entradas);
+            _context.EntradasDetalles.Remove(entradas);
             await _context.SaveChangesAsync();
 
             return Ok();

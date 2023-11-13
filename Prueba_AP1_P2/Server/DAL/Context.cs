@@ -7,7 +7,7 @@ namespace Prueba_AP1_P2.Server.DAL
     {
         public DbSet<Entradas> Entradas { get; set; }
         public DbSet<Productos> Productos { get; set; }
-        public DbSet<EntredasDetalle> EntredasDetalles { get; set; }
+        public DbSet<EntredasDetalle> EntradasDetalles { get; set; }
         public Context(DbContextOptions<Context> options):base(options) { }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
