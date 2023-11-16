@@ -15,7 +15,7 @@
                     <div class="row">
                         <label>Entrada ID:</label>
                         <div class=" col-auto  mb-3">
-                            <InputNumber @bind-Value="Entradas.EntradaId" class="form-control"></InputNumber>
+                            <InputNumber @bind-Value="Entradas.EntradaId" class="form-control" min="0"></InputNumber>
                             <ValidationMessage For="@(() => Entradas.EntradaId)" />
                         </div>
                         <div class="col">
@@ -63,7 +63,7 @@
                                         <div class="row">
                                             <div class="col">
                                                 <div class="input-group">
-                                                    <InputNumber @bind-Value="EntradasDetalle.CantidadUtilizada" class="form-control"></InputNumber>
+                                                    <InputNumber @bind-Value="EntradasDetalle.CantidadUtilizada" class="form-control" min="0"></InputNumber>
                                                     <button type="button" class="btn btn-success" @onclick="AgregarDetalle">Agregar <i class="oi oi-plus" /></button>
                                                     <ValidationMessage For="@(() => EntradasDetalle.CantidadUtilizada)" />
                                                 </div>
@@ -123,7 +123,7 @@
                                 <ValidationMessage For="@(() => EntradasDetalle.DetalleId)" />
                             </div>
                             <div class="col-2">
-                                <InputNumber @bind-Value="Entradas.CantidadProducida" class="form-control" @oninput="ValidarProducido"></InputNumber>
+                                <InputNumber @bind-Value="Entradas.CantidadProducida" class="form-control" @oninput="ValidarProducido" min="0"></InputNumber>
                             </div>
                         </div>
                     </fieldset>
@@ -177,7 +177,7 @@
 
     public async Task Guardar()
     {
-        if (await ValidarProducido())
+        if (await ValidarProducido() || Entradas.ProductoId == 0)
         {
             Entradas.PesoTotal = PesoTotal;
 
@@ -271,7 +271,7 @@
             Nuevo();
         }
 
-        else if (ValidacionEntro)
+        else /* if (ValidacionEntro) */
         {
             var mensaje = new NotificationMessage
                 {
@@ -686,8 +686,8 @@
             ValidacionEntro = true;
         }
 
-        if (Entradas.ProductoId < 5) // quito este if y no deja pasar sinque agregues un producido
-            return true;
+        // if (Entradas.ProductoId < 5) // quito este if y no deja pasar sinque agregues un producido
+        //     return true;
 
         return MPC5 || MPP5 || MPP2;
 
