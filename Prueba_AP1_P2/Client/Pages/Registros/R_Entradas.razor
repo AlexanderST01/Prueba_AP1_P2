@@ -491,7 +491,7 @@
 
             for(int i = 0; i < Entradas.CantidadProducida; i++) 
             {
-                if (mani < 75.60)
+                if (mani < 1)
                 {
                     var mensaje = new NotificationMessage
                                 {
@@ -503,7 +503,7 @@
                     notificationService.Notify(mensaje);
                 }
 
-                if (pistacho < 75.60)
+                if (pistacho < 1)
                 {
                     var mensaje = new NotificationMessage
                                 {
@@ -515,7 +515,7 @@
                     notificationService.Notify(mensaje);
                 }
 
-                if (pasas < 75.60)
+                if (pasas < 1)
                 {
                     var mensaje = new NotificationMessage
                                 {
@@ -527,7 +527,7 @@
                     notificationService.Notify(mensaje);
                 }
 
-                MPP5 = (mani >= 75.60 && pistacho >= 75.60 && pasas >= 75.60);
+                MPP5 = ((mani + pistacho + pasas) >= 226.80);
 
                 if (MPP5)
                 {
@@ -554,7 +554,7 @@
 
             for (int i = 0; i < Entradas.CantidadProducida; i++)
             {
-                if (mani < 75.60)
+                if (mani < 1)
                 {
                     var mensaje = new NotificationMessage
                             {
@@ -566,34 +566,21 @@
                     notificationService.Notify(mensaje);
                 }
 
-                if (pistacho < 75.60 )
+                if (pistacho < 1 && pasas < 1)
                 {
-                    if(pasas > 75.60)
-                    {
+                    
                         var mensaje = new NotificationMessage
                             {
                                 Severity = NotificationSeverity.Error,
-                                Summary = "Pistacho ",
-                                Detail = $"Te faltan gramos de pistacho para el producto mixto",
+                                Summary = "Pistacho o Pasas",
+                                Detail = $"Te faltan gramos de pistacho o pasas para el producto mixto",
                                 Duration = 5_000
                             };
                         notificationService.Notify(mensaje);
-                    }    
-
-                    if (pasas < 75.60)
-                    {
-                        var mensajes = new NotificationMessage
-                            {
-                                Severity = NotificationSeverity.Error,
-                                Summary = "Pistacho o Pasas",
-                                Detail = $"Te faltan gramos de pasas para el producto mixto",
-                                Duration = 5_000
-                            };
-                        notificationService.Notify(mensajes);
-                    }
+                    
                 }
 
-                if (ciruelas < 75.60)
+                if (ciruelas < 1)
                 {
                     var mensaje = new NotificationMessage
                             {
@@ -605,7 +592,7 @@
                     notificationService.Notify(mensaje);
                 }
 
-                MPC5 = (mani >= 75.60 && (pistacho >= 75.60 || pasas >= 75.60) && ciruelas >= 75.60);
+                MPC5 = ((mani + pistacho + ciruelas) >= 226.80 || (mani + pasas + ciruelas) >= 226.80);
 
                 if (MPC5)
                 {
@@ -632,7 +619,7 @@
 
             for (int i = 0; i < Entradas.CantidadProducida; i++)
             {
-                if (mani < 30.24)
+                if (mani < 1)
                 {
                     var mensaje = new NotificationMessage
                         {
@@ -644,7 +631,7 @@
                     notificationService.Notify(mensaje);
                 }
 
-                if (pistacho < 30.24)
+                if (pistacho < 1)
                 {
                     var mensaje = new NotificationMessage
                         {
@@ -656,7 +643,7 @@
                     notificationService.Notify(mensaje);
                 }
 
-                if (pasas < 30.24)
+                if (pasas < 1)
                 {
                     var mensaje = new NotificationMessage
                         {
@@ -668,7 +655,7 @@
                     notificationService.Notify(mensaje);
                 }
 
-                MPP2 = (mani >= 30.24 && pistacho >= 30.24 && pasas >= 30.24);
+                MPP2 = ((mani + pistacho + pasas) >= 90.72);
 
                 if (MPP2)
                 {
