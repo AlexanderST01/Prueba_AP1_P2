@@ -226,7 +226,7 @@
             }
 
             var entradasDevuelta = await response.Content.ReadFromJsonAsync<Entradas>();
-            
+
             foreach (var item in DetallesEliminados)
             {
                 if (DetallesAgregado.Any(d => d.DetalleId == item.DetalleId))
@@ -359,10 +359,12 @@
             }
             else
             {
-
-                var aumentar = Productos.FirstOrDefault(p => p.ProductoId == Entradas.ProductoId);
-                aumentar!.Existencia = aumentar.Existencia - Entradas.CantidadProducida;
-                await httpClient.PutAsJsonAsync<Productos>($"api/Productos/{aumentar.ProductoId}", aumentar);
+                if (Entradas.ProductoId > 0)
+                {
+                    var aumentar = Productos.FirstOrDefault(p => p.ProductoId == Entradas.ProductoId);
+                    aumentar!.Existencia = aumentar.Existencia - Entradas.CantidadProducida;
+                    await httpClient.PutAsJsonAsync<Productos>($"api/Productos/{aumentar.ProductoId}", aumentar);
+                }                
 
                 foreach (var item in Entradas.EntradasDetalles)
                 {
