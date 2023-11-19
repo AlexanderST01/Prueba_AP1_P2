@@ -176,8 +176,9 @@
     }
 
     public async Task Guardar()
-    {
-        if (await ValidarProducido() || Entradas.ProductoId == 0)
+    { 
+        /* ((await ValidarProducido() || Entradas.ProductoId == 0) && ValidarEntradasDetalle()) */
+        if (await ValidarProducido())
         {
             Entradas.PesoTotal = PesoTotal;
 
@@ -226,7 +227,7 @@
             }
 
             var entradasDevuelta = await response.Content.ReadFromJsonAsync<Entradas>();
-            
+
             foreach (var item in DetallesEliminados)
             {
                 if (DetallesAgregado.Any(d => d.DetalleId == item.DetalleId))
@@ -271,16 +272,27 @@
             Nuevo();
         }
 
-        else /* if (ValidacionEntro) */
+        else if (ValidarEntradasDetalle())/* if (ValidacionEntro) */
         {
             var mensaje = new NotificationMessage
                 {
                     Severity = NotificationSeverity.Warning,
                     Summary = "Advertencia guardar ",
-                    Detail = "Antes de guardar debes de terminar de agregar los detalles faltantes para producir un producto mixto",
+                    Detail = "Antes de guardar debes de terminar de agregar los detalles faltantes para producir un producto mixto y/o Poner la cantidad de productos mixto que quieres",
                     Duration = 5_000
                 };
             notificationService.Notify(mensaje);            
+        }
+        else
+        {
+            var mensaje = new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "Error ",
+                    Detail = "Debes de agregar un detalle",
+                    Duration = 5_000
+                };
+            notificationService.Notify(mensaje);
         }
     }
 
@@ -359,10 +371,12 @@
             }
             else
             {
-
-                var aumentar = Productos.FirstOrDefault(p => p.ProductoId == Entradas.ProductoId);
-                aumentar!.Existencia = aumentar.Existencia - Entradas.CantidadProducida;
-                await httpClient.PutAsJsonAsync<Productos>($"api/Productos/{aumentar.ProductoId}", aumentar);
+                if (Entradas.ProductoId > 0)
+                {
+                    var aumentar = Productos.FirstOrDefault(p => p.ProductoId == Entradas.ProductoId);
+                    aumentar!.Existencia = aumentar.Existencia - Entradas.CantidadProducida;
+                    await httpClient.PutAsJsonAsync<Productos>($"api/Productos/{aumentar.ProductoId}", aumentar);
+                }                
 
                 foreach (var item in Entradas.EntradasDetalles)
                 {
@@ -483,51 +497,51 @@
         MPC5 = false;
         ValidacionEntro = false;
 
-        if(Entradas.ProductoId == 5)
+        if (Entradas.ProductoId == 5)
         {
             var mani = Entradas.EntradasDetalles.Where(p => p.ProductoId == 1).Sum(s => s.CantidadUtilizada);
             var pistacho = Entradas.EntradasDetalles.Where(p => p.ProductoId == 2).Sum(s => s.CantidadUtilizada);
             var pasas = Entradas.EntradasDetalles.Where(p => p.ProductoId == 3).Sum(s => s.CantidadUtilizada);
 
-            for(int i = 0; i < Entradas.CantidadProducida; i++) 
+            for (int i = 0; i < Entradas.CantidadProducida; i++)
             {
                 if (mani < 1)
                 {
                     var mensaje = new NotificationMessage
-                                {
-                                    Severity = NotificationSeverity.Error,
-                                    Detail = $"Te faltan gramos de pistacho para el producto mixto",
-                                    Summary = "Maní ",
-                                    Duration = 5_000
-                                };
+                        {
+                            Severity = NotificationSeverity.Error,
+                            Detail = $"Te faltan gramos de pistacho para el producto mixto",
+                            Summary = "Maní ",
+                            Duration = 5_000
+                        };
                     notificationService.Notify(mensaje);
                 }
 
                 if (pistacho < 1)
                 {
                     var mensaje = new NotificationMessage
-                                {
-                                    Severity = NotificationSeverity.Error,
-                                    Summary = "Pistacho ",
-                                    Detail = $"Te faltan gramos de pistacho para el producto mixto",
-                                    Duration = 5_000
-                                };
+                        {
+                            Severity = NotificationSeverity.Error,
+                            Summary = "Pistacho ",
+                            Detail = $"Te faltan gramos de pistacho para el producto mixto",
+                            Duration = 5_000
+                        };
                     notificationService.Notify(mensaje);
                 }
 
                 if (pasas < 1)
                 {
                     var mensaje = new NotificationMessage
-                                {
-                                    Severity = NotificationSeverity.Error,
-                                    Summary = "Pasas ",
-                                    Detail = $"Te faltan gramos de pasa para el producto mixto",
-                                    Duration = 5_000
-                                };
+                        {
+                            Severity = NotificationSeverity.Error,
+                            Summary = "Pasas ",
+                            Detail = $"Te faltan gramos de pasa para el producto mixto",
+                            Duration = 5_000
+                        };
                     notificationService.Notify(mensaje);
                 }
 
-                MPP5 = ((mani + pistacho + pasas) >= 226.80);
+                MPP5 = ((mani + pistacho + pasas) >= 226.80) && (mani > 0 && pistacho > 0 && pasas >0);
 
                 if (MPP5)
                 {
@@ -557,42 +571,42 @@
                 if (mani < 1)
                 {
                     var mensaje = new NotificationMessage
-                            {
-                                Severity = NotificationSeverity.Error,
-                                Summary = "Maní ",
-                                Detail = $"Te faltan gramos de maní para el producto mixto",
-                                Duration = 5_000
-                            };
+                        {
+                            Severity = NotificationSeverity.Error,
+                            Summary = "Maní ",
+                            Detail = $"Te faltan gramos de maní para el producto mixto",
+                            Duration = 5_000
+                        };
                     notificationService.Notify(mensaje);
                 }
 
                 if (pistacho < 1 && pasas < 1)
                 {
-                    
-                        var mensaje = new NotificationMessage
-                            {
-                                Severity = NotificationSeverity.Error,
-                                Summary = "Pistacho o Pasas",
-                                Detail = $"Te faltan gramos de pistacho o pasas para el producto mixto",
-                                Duration = 5_000
-                            };
-                        notificationService.Notify(mensaje);
-                    
+
+                    var mensaje = new NotificationMessage
+                        {
+                            Severity = NotificationSeverity.Error,
+                            Summary = "Pistacho o Pasas",
+                            Detail = $"Te faltan gramos de pistacho o pasas para el producto mixto",
+                            Duration = 5_000
+                        };
+                    notificationService.Notify(mensaje);
+
                 }
 
                 if (ciruelas < 1)
                 {
                     var mensaje = new NotificationMessage
-                            {
-                                Severity = NotificationSeverity.Error,
-                                Summary = "Ciruelas ",
-                                Detail = $"Te faltan gramos de ciruelas para el producto mixto",
-                                Duration = 5_000
-                            };
+                        {
+                            Severity = NotificationSeverity.Error,
+                            Summary = "Ciruelas ",
+                            Detail = $"Te faltan gramos de ciruelas para el producto mixto",
+                            Duration = 5_000
+                        };
                     notificationService.Notify(mensaje);
                 }
 
-                MPC5 = ((mani + pistacho + ciruelas) >= 226.80 || (mani + pasas + ciruelas) >= 226.80);
+                MPC5 = ((mani + pistacho + ciruelas) >= 226.80 || (mani + pasas + ciruelas) >= 226.80) && (mani > 0 && (pistacho > 0 || pasas > 0) && ciruelas > 0);
 
                 if (MPC5)
                 {
@@ -655,7 +669,7 @@
                     notificationService.Notify(mensaje);
                 }
 
-                MPP2 = ((mani + pistacho + pasas) >= 90.72);
+                MPP2 = ((mani + pistacho + pasas) >= 90.72) && (mani > 0 && pistacho > 0 && pasas > 0);
 
                 if (MPP2)
                 {
@@ -704,6 +718,11 @@
                 };
             notificationService.Notify(mensaje);
         }
+        return detallesNotNull;
+    }
+    public bool ValidarEntradasDetalle()
+    {
+        var detallesNotNull = Entradas.EntradasDetalles.Count > 0;
         return detallesNotNull;
     }
 }
