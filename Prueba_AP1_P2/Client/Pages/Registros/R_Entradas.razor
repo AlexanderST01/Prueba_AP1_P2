@@ -176,8 +176,9 @@
     }
 
     public async Task Guardar()
-    {
-        if (await ValidarProducido() || Entradas.ProductoId == 0)
+    { 
+        /* ((await ValidarProducido() || Entradas.ProductoId == 0) && ValidarEntradasDetalle()) */
+        if (await ValidarProducido())
         {
             Entradas.PesoTotal = PesoTotal;
 
@@ -271,16 +272,27 @@
             Nuevo();
         }
 
-        else /* if (ValidacionEntro) */
+        else if (ValidarEntradasDetalle())/* if (ValidacionEntro) */
         {
             var mensaje = new NotificationMessage
                 {
                     Severity = NotificationSeverity.Warning,
                     Summary = "Advertencia guardar ",
-                    Detail = "Antes de guardar debes de terminar de agregar los detalles faltantes para producir un producto mixto",
+                    Detail = "Antes de guardar debes de terminar de agregar los detalles faltantes para producir un producto mixto y/o Poner la cantidad de productos mixto que quieres",
                     Duration = 5_000
                 };
             notificationService.Notify(mensaje);            
+        }
+        else
+        {
+            var mensaje = new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "Error ",
+                    Detail = "Debes de agregar un detalle",
+                    Duration = 5_000
+                };
+            notificationService.Notify(mensaje);
         }
     }
 
@@ -719,6 +731,11 @@
                 };
             notificationService.Notify(mensaje);
         }
+        return detallesNotNull;
+    }
+    public bool ValidarEntradasDetalle()
+    {
+        var detallesNotNull = Entradas.EntradasDetalles.Count > 0;
         return detallesNotNull;
     }
 }
