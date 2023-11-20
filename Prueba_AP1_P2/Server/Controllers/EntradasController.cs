@@ -118,6 +118,17 @@ namespace Prueba_AP1_P2.Server.Controllers
 
             return NoContent();
         }
+
+        [HttpGet("EntradasDetalles")]
+        public async Task<ActionResult<IEnumerable<EntredasDetalle>>> GetEntradasDetalles()
+        {
+            if (_context.EntradasDetalles == null)
+            {
+                return NotFound();
+            }
+            return await _context.EntradasDetalles.ToListAsync();
+        }
+
         [HttpDelete("DeleteDetalles/{id}")]
         public async Task<IActionResult> DeleteDetalles(int id)
         {

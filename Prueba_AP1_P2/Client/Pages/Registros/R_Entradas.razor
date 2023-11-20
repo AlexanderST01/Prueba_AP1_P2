@@ -88,7 +88,7 @@
                                                     <td>@item.ProductoId</td>
                                                     <td>@ObtenerDescripcion(item.ProductoId)</td>
                                                     <td>@item.CantidadUtilizada g</td>
-                                                        <td><button type="button" class="btn btn-danger" @onclick=@(() => RemoveDatalle(item))><i class="oi oi-trash" /></button></td>
+                                                        <td><button type="button" class="btn btn-danger" @onclick=@(() => RemoverDetalle(item))><i class="oi oi-trash" /></button></td>
                                                     </tr>
                                                 }
                                             </tbody>
@@ -123,7 +123,7 @@
                                 <ValidationMessage For="@(() => EntradasDetalle.DetalleId)" />
                             </div>
                             <div class="col-2">
-                                <InputNumber @bind-Value="Entradas.CantidadProducida" class="form-control" @oninput="ValidarProducido" min="0"></InputNumber>
+                                <InputNumber @bind-Value="Entradas.CantidadProducida" class="form-control" @onblur="ValidarProducido" min="0"></InputNumber>
                             </div>
                         </div>
                     </fieldset>
@@ -151,13 +151,17 @@
     // public List<Entradas> ListEntradas { get; set; } = new();
     public List<EntredasDetalle> DetallesEliminados { get; set; } = new();
     public List<EntredasDetalle> DetallesAgregado { get; set; } = new();
+    public List<EntredasDetalle> DetallesModificado { get; set; } = new();
+
     // public List<EntredasDetalle> ReduccionProductos { get; set; } = new();
     public bool MPP5 { get; set; } = false;
     public bool MPP2 { get; set; } = false;
     public bool MPC5 { get; set; } = false;
     public bool ValidacionEntro { get; set; } = false;
     public double PesoTotal { get; set; }
-
+    // public Entradas ProductoModificado { get; set; } = new();
+    public int ProductoModificado { get; set; }
+    public double CantidadProducidaModificada { get; set; }
     protected override  async void OnInitialized()
     {
         var productos = await httpClient.GetFromJsonAsync<List<Productos>>("api/Productos"); 
@@ -185,10 +189,11 @@
             var listEntradas = await httpClient.GetFromJsonAsync<List<Entradas>>("api/Entradas");
             var entradaAux = listEntradas!.FirstOrDefault(e => e.EntradaId == Entradas.EntradaId);
             var ListProductos = await httpClient.GetFromJsonAsync<List<Productos>>("api/Productos");
+            var ListDetalles = await httpClient.GetFromJsonAsync<List<EntredasDetalle>>("api/Entradas/EntradasDetalles");
 
             if(entradaAux is not null)
             {               
-                var CantidadProducidoMayor = (entradaAux.CantidadProducida < Entradas.CantidadProducida) && Entradas.ProductoId >= 5;
+                var CantidadProducidoMayor = (entradaAux.CantidadProducida < Entradas.CantidadProducida) && Entradas.ProductoId >= 5 ;
                 if (CantidadProducidoMayor)
                 {
                     var aumentrar = ListProductos!.FirstOrDefault(p => p.ProductoId == Entradas.ProductoId);
@@ -203,14 +208,60 @@
                     disminuir!.Existencia = disminuir.Existencia - (entradaAux.CantidadProducida - Entradas.CantidadProducida);
                     using var responseDetalleAgregado = await httpClient.PutAsJsonAsync<Productos>($"api/Productos/{disminuir.ProductoId}", disminuir);
                 }
+                ///////////// 
+                var RestablacerProductoMixto = ProductoModificado != Entradas.ProductoId && Entradas.ProductoId >= 5;
+                if (RestablacerProductoMixto)
+                {
+                    var disminuir = ListProductos!.FirstOrDefault(p => p.ProductoId == ProductoModificado);
+                    disminuir!.Existencia = disminuir.Existencia - CantidadProducidaModificada;
+                    using var responseDetalleAgregado = await httpClient.PutAsJsonAsync<Productos>($"api/Productos/{disminuir.ProductoId}", disminuir);
+                    /////////////////////////
+                    if (Entradas.CantidadProducida == entradaAux.CantidadProducida)
+                    {
+                        var aumentrar = ListProductos!.FirstOrDefault(p => p.ProductoId == Entradas.ProductoId);
+                        aumentrar!.Existencia = aumentrar.Existencia + Entradas.CantidadProducida ;
+                        using var responseDetalleAgregado2 = await httpClient.PutAsJsonAsync<Productos>($"api/Productos/{aumentrar.ProductoId}", aumentrar);
+                    }
+                    /////////////////////////
+                }
+                /////////////
+
+               
+
             }
 
-            else if(Entradas.ProductoId >=5)
+            else if (Entradas.ProductoId >= 5)
             {
                 var aumentar = ListProductos!.FirstOrDefault(p => p.ProductoId == Entradas.ProductoId);
                 aumentar!.Existencia = aumentar.Existencia + Entradas.CantidadProducida;
                 using var responseDetalleAgregado = await httpClient.PutAsJsonAsync<Productos>($"api/Productos/{aumentar.ProductoId}", aumentar);
             }
+            ///////////// Para cuando modificas el detalle de una entrada
+
+            if (DetallesModificado!.Count > 0)
+            {
+                foreach (var item in DetallesModificado)
+                {
+                    var EntradasDetalleModificar = ListDetalles!.FirstOrDefault(e => e.DetalleId == item.DetalleId);
+                    if (item.CantidadUtilizada > EntradasDetalleModificar.CantidadUtilizada)
+                    {
+                        var disminuir = ListProductos!.FirstOrDefault(p => p.ProductoId == item.ProductoId);
+                        disminuir!.Existencia = disminuir.Existencia - (item.CantidadUtilizada - EntradasDetalleModificar.CantidadUtilizada);
+                        using var responseDetalleAgregado = await httpClient.PutAsJsonAsync<Productos>($"api/Productos/{disminuir.ProductoId}", disminuir);
+                    }
+                    else if(item.CantidadUtilizada < EntradasDetalleModificar.CantidadUtilizada)
+                    {
+                        var aumentar = ListProductos!.FirstOrDefault(p => p.ProductoId == item.ProductoId);
+                        aumentar!.Existencia = aumentar.Existencia + (EntradasDetalleModificar.CantidadUtilizada - item.CantidadUtilizada );
+                        using var responseDetalleAgregado = await httpClient.PutAsJsonAsync<Productos>($"api/Productos/{aumentar.ProductoId}", aumentar);                        
+                    }
+                }
+            }
+
+            ////////////
+
+
+
 
             using var response = await httpClient.PostAsJsonAsync("api/Entradas", Entradas);
             if (!response.IsSuccessStatusCode)
@@ -304,6 +355,8 @@
         Entradas = new();
         EntradasDetalle = new();
         DetallesAgregado = new();
+        ProductoModificado = 0;
+        CantidadProducidaModificada = 0;
 
         var mensaje = new NotificationMessage
             {
@@ -321,6 +374,8 @@
 
     public async Task Buscar()
     {
+        ProductoModificado = 0;
+        CantidadProducidaModificada = 0;
         DetallesAgregado = new();
         DetallesEliminados = new();
         var entradasNotNull = (await httpClient.GetFromJsonAsync<List<Entradas>>($"api/Entradas"))!
@@ -333,6 +388,8 @@
             {
                 Entradas = entradasEncontrada;
                 PesoTotal = Entradas.EntradasDetalles.Sum(ed => ed.CantidadUtilizada);
+                ProductoModificado = Entradas.ProductoId;
+                CantidadProducidaModificada = Entradas.CantidadProducida;
                 StateHasChanged();
             }
         }
@@ -348,6 +405,7 @@
                 };
             notificationService.Notify(mensaje);
         }
+
     }
 
     public async Task Eliminar()
@@ -431,7 +489,7 @@
                 }
             }
 
-            var encontrado = await httpClient.GetFromJsonAsync<List<EntredasDetalle>>($"api/Entradas");
+            var encontrado = await httpClient.GetFromJsonAsync<List<EntredasDetalle>>($"api/Entradas/EntradasDetalles");
             var Existe = encontrado!.Any(e => e.DetalleId == EntradasDetalle.DetalleId);
 
             EntradasDetalle.EntradaId = Entradas.EntradaId;
@@ -439,8 +497,12 @@
             if (DetallesEliminados.Any(d => d.DetalleId == EntradasDetalle.DetalleId))
                 DetallesEliminados.Remove(EntradasDetalle);
 
-            if (Existe)
+            if (!Existe)
                 DetallesAgregado.Add(EntradasDetalle);
+
+            else if(encontrado!.FirstOrDefault(e => e.DetalleId == EntradasDetalle.DetalleId)!.CantidadUtilizada != EntradasDetalle.CantidadUtilizada)
+                DetallesModificado.Add(EntradasDetalle);
+            
 
             Entradas.EntradasDetalles.Add(EntradasDetalle);
             EntradasDetalle = new EntredasDetalle();
@@ -461,7 +523,7 @@
         return new Entradas();
     }
 
-    private async Task RemoveDatalle(EntredasDetalle detalle)
+    private async Task RemoverDetalle(EntredasDetalle detalle)
     {
         EntradasDetalle = detalle;
         EntradasDetalle.ProductoId = detalle.ProductoId;
@@ -505,46 +567,49 @@
 
             for (int i = 0; i < Entradas.CantidadProducida; i++)
             {
-                if (mani < 1)
-                {
-                    var mensaje = new NotificationMessage
-                        {
-                            Severity = NotificationSeverity.Error,
-                            Detail = $"Te faltan gramos de pistacho para el producto mixto",
-                            Summary = "Maní ",
-                            Duration = 5_000
-                        };
-                    notificationService.Notify(mensaje);
-                }
+                // if (mani < 1)
+                // {
+                //     var mensaje = new NotificationMessage
+                //         {
+                //             Severity = NotificationSeverity.Error,
+                //             Detail = $"Te faltan gramos de pistacho para el producto mixto",
+                //             Summary = "Maní ",
+                //             Duration = 5_000
+                //         };
+                //     notificationService.Notify(mensaje);
+                // }
 
-                if (pistacho < 1)
-                {
-                    var mensaje = new NotificationMessage
-                        {
-                            Severity = NotificationSeverity.Error,
-                            Summary = "Pistacho ",
-                            Detail = $"Te faltan gramos de pistacho para el producto mixto",
-                            Duration = 5_000
-                        };
-                    notificationService.Notify(mensaje);
-                }
+                // if (pistacho < 1)
+                // {
+                //     var mensaje = new NotificationMessage
+                //         {
+                //             Severity = NotificationSeverity.Error,
+                //             Summary = "Pistacho ",
+                //             Detail = $"Te faltan gramos de pistacho para el producto mixto",
+                //             Duration = 5_000
+                //         };
+                //     notificationService.Notify(mensaje);
+                // }
 
-                if (pasas < 1)
-                {
-                    var mensaje = new NotificationMessage
-                        {
-                            Severity = NotificationSeverity.Error,
-                            Summary = "Pasas ",
-                            Detail = $"Te faltan gramos de pasa para el producto mixto",
-                            Duration = 5_000
-                        };
-                    notificationService.Notify(mensaje);
-                }
+                // if (pasas < 1)
+                // {
+                //     var mensaje = new NotificationMessage
+                //         {
+                //             Severity = NotificationSeverity.Error,
+                //             Summary = "Pasas ",
+                //             Detail = $"Te faltan gramos de pasa para el producto mixto",
+                //             Duration = 5_000
+                //         };
+                //     notificationService.Notify(mensaje);
+                // }
+
+
 
                 MPP5 = ((mani + pistacho + pasas) >= 226.80) && (mani > 0 && pistacho > 0 && pasas >0);
 
                 if (MPP5)
                 {
+                    
                     Producidos = Productos.FirstOrDefault(p => p.ProductoId == 5)!;
                     Producidos.Existencia = Entradas.CantidadProducida;
                     mani -= 75.60;
@@ -553,6 +618,14 @@
                 }
                 else
                 {
+                    var mensaje = new NotificationMessage
+                        {
+                            Severity = NotificationSeverity.Error,
+                            Summary = "Productos ",
+                            Detail = $"Debes de introducir mas productoas para producir productos mixtos",
+                            Duration = 5_000
+                        };
+                    notificationService.Notify(mensaje);
                     break;
                 }
             }
@@ -568,48 +641,51 @@
 
             for (int i = 0; i < Entradas.CantidadProducida; i++)
             {
-                if (mani < 1)
-                {
-                    var mensaje = new NotificationMessage
-                        {
-                            Severity = NotificationSeverity.Error,
-                            Summary = "Maní ",
-                            Detail = $"Te faltan gramos de maní para el producto mixto",
-                            Duration = 5_000
-                        };
-                    notificationService.Notify(mensaje);
-                }
+                // if (mani < 1)
+                // {
+                //     var mensaje = new NotificationMessage
+                //         {
+                //             Severity = NotificationSeverity.Error,
+                //             Summary = "Maní ",
+                //             Detail = $"Te faltan gramos de maní para el producto mixto",
+                //             Duration = 5_000
+                //         };
+                //     notificationService.Notify(mensaje);
+                // }
 
-                if (pistacho < 1 && pasas < 1)
-                {
+                // if (pistacho < 1 && pasas < 1)
+                // {
 
-                    var mensaje = new NotificationMessage
-                        {
-                            Severity = NotificationSeverity.Error,
-                            Summary = "Pistacho o Pasas",
-                            Detail = $"Te faltan gramos de pistacho o pasas para el producto mixto",
-                            Duration = 5_000
-                        };
-                    notificationService.Notify(mensaje);
+                //     var mensaje = new NotificationMessage
+                //         {
+                //             Severity = NotificationSeverity.Error,
+                //             Summary = "Pistacho o Pasas",
+                //             Detail = $"Te faltan gramos de pistacho o pasas para el producto mixto",
+                //             Duration = 5_000
+                //         };
+                //     notificationService.Notify(mensaje);
 
-                }
+                // }
 
-                if (ciruelas < 1)
-                {
-                    var mensaje = new NotificationMessage
-                        {
-                            Severity = NotificationSeverity.Error,
-                            Summary = "Ciruelas ",
-                            Detail = $"Te faltan gramos de ciruelas para el producto mixto",
-                            Duration = 5_000
-                        };
-                    notificationService.Notify(mensaje);
-                }
+                // if (ciruelas < 1)
+                // {
+                //     var mensaje = new NotificationMessage
+                //         {
+                //             Severity = NotificationSeverity.Error,
+                //             Summary = "Ciruelas ",
+                //             Detail = $"Te faltan gramos de ciruelas para el producto mixto",
+                //             Duration = 5_000
+                //         };
+                //     notificationService.Notify(mensaje);
+                // }
+
+
 
                 MPC5 = ((mani + pistacho + ciruelas) >= 226.80 || (mani + pasas + ciruelas) >= 226.80) && (mani > 0 && (pistacho > 0 || pasas > 0) && ciruelas > 0);
 
                 if (MPC5)
                 {
+                    
                     Producidos = Productos.FirstOrDefault(p => p.ProductoId == 5)!;
                     Producidos.Existencia = Entradas.CantidadProducida;
                     mani -= 75.60;
@@ -619,6 +695,14 @@
                 }
                 else
                 {
+                    var mensaje = new NotificationMessage
+                        {
+                            Severity = NotificationSeverity.Error,
+                            Summary = "Productos ",
+                            Detail = $"Debes de introducir mas productoas para producir productos mixtos",
+                            Duration = 5_000
+                        };
+                    notificationService.Notify(mensaje);
                     break;
                 }
             }
@@ -633,46 +717,47 @@
 
             for (int i = 0; i < Entradas.CantidadProducida; i++)
             {
-                if (mani < 1)
-                {
-                    var mensaje = new NotificationMessage
-                        {
-                            Severity = NotificationSeverity.Error,
-                            Summary = "Maní ",
-                            Detail = $"Te faltan gramos de maní para el producto mixto",
-                            Duration = 5_000
-                        };
-                    notificationService.Notify(mensaje);
-                }
+                // if (mani < 1)
+                // {
+                //     var mensaje = new NotificationMessage
+                //         {
+                //             Severity = NotificationSeverity.Error,
+                //             Summary = "Maní ",
+                //             Detail = $"Te faltan gramos de maní para el producto mixto",
+                //             Duration = 5_000
+                //         };
+                //     notificationService.Notify(mensaje);
+                // }
 
-                if (pistacho < 1)
-                {
-                    var mensaje = new NotificationMessage
-                        {
-                            Severity = NotificationSeverity.Error,
-                            Summary = "Pistacho ",
-                            Detail = $"Te faltan gramos de pistacho para el producto mixto",
-                            Duration = 5_000
-                        };
-                    notificationService.Notify(mensaje);
-                }
+                // if (pistacho < 1)
+                // {
+                //     var mensaje = new NotificationMessage
+                //         {
+                //             Severity = NotificationSeverity.Error,
+                //             Summary = "Pistacho ",
+                //             Detail = $"Te faltan gramos de pistacho para el producto mixto",
+                //             Duration = 5_000
+                //         };
+                //     notificationService.Notify(mensaje);
+                // }
 
-                if (pasas < 1)
-                {
-                    var mensaje = new NotificationMessage
-                        {
-                            Severity = NotificationSeverity.Error,
-                            Summary = "Pasas ",
-                            Detail = $"Te faltan gramos de pasa para el producto mixto",
-                            Duration = 5_000
-                        };
-                    notificationService.Notify(mensaje);
-                }
+                // if (pasas < 1)
+                // {
+                //     var mensaje = new NotificationMessage
+                //         {
+                //             Severity = NotificationSeverity.Error,
+                //             Summary = "Pasas ",
+                //             Detail = $"Te faltan gramos de pasa para el producto mixto",
+                //             Duration = 5_000
+                //         };
+                //     notificationService.Notify(mensaje);
+                // }
 
                 MPP2 = ((mani + pistacho + pasas) >= 90.72) && (mani > 0 && pistacho > 0 && pasas > 0);
 
                 if (MPP2)
                 {
+                    
                     Producidos = Productos.FirstOrDefault(p => p.ProductoId == 7)!;
                     Producidos!.Existencia = Entradas.CantidadProducida;
                     mani -= 30.24;
@@ -681,6 +766,14 @@
                 }
                 else
                 {
+                    var mensaje = new NotificationMessage
+                        {
+                            Severity = NotificationSeverity.Error,
+                            Summary = "Productos ",
+                            Detail = $"Debes de introducir mas productoas para producir productos mixtos",
+                            Duration = 5_000
+                        };
+                    notificationService.Notify(mensaje);
                     break;
                 }
             }

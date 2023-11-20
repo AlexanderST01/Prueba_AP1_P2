@@ -90,7 +90,11 @@
                             </tbody>
                             <tfoot>
                                 <tr>
-                                    <span>Conteo: @Conteo</span>
+                                    <th>Conteo: @Conteo</th>
+                                    <th></th>
+                                    <th></th>
+                                    <th></th>
+                                    <th>Suma Peso Total: @SumaPesoTotal</th>
                                 </tr>
                             </tfoot>
                         </table>
@@ -108,7 +112,8 @@
     public Entradas entradasAux = new();
     public int Conteo;
     public int opciones;
-    public DateTime Desde { get; set; }
+    public double SumaPesoTotal;
+    public DateTime Desde { get; set;}
     public DateTime Hasta { get; set; }
 
     protected override async void OnInitialized()
@@ -192,5 +197,6 @@
                 break;
         }
         Conteo = Entradas != null ? Entradas!.Count() : 0;
+        SumaPesoTotal = Entradas != null ? Entradas.Sum(t => t.PesoTotal) : 0;
     }
 }
