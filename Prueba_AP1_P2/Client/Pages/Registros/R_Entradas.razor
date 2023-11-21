@@ -2,55 +2,55 @@
 @page "/RegistroEntradas/{EntradaId:int}"
 @inject NotificationService notificationService
 @inject HttpClient httpClient
+
 <EditForm Model="Entradas" OnValidSubmit="Guardar">
-    <DataAnnotationsValidator/>
+    <DataAnnotationsValidator />
+    <div class="container">
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h1 class="h4">Entradas de productos Empacados</h1>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-12 col-md-4 mb-3">
+                                <label class="col-12 col-md-2">Entrada ID:</label>
+                                <div class="input-group">
+                                    <InputNumber @bind-Value="Entradas.EntradaId" class="form-control" min="0"></InputNumber>
+                                    <ValidationMessage For="@(() => Entradas.EntradaId)" />
+                                    <button type="button" class="btn btn-primary oi oi-magnifying-glass" @onclick="Buscar"></button>
+                                </div>                               
+                            </div>                           
+                        </div>
+                        <div class="row">
+                            <div class="col-12 col-md-6">
+                                <label>Fecha:</label>
+                                <InputDate @bind-Value="Entradas.Fecha" class="form-control"></InputDate>
+                                <ValidationMessage For="@(() => Entradas.Fecha)" />
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12 col-md-6">
+                                <label>Concepto:</label>
+                                <InputText @bind-Value="Entradas.Concepto" class="form-control"></InputText>
+                                <ValidationMessage For="@(() => Entradas.Concepto)" />
+                            </div>
+                        </div>
+                        <br />
 
-    <div class="row">
-       <div class="col-8">
-            <div class="card">
-                <div class="card-header">
-                    <h1>Entradas de productos Empacados</h1>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <label>Entrada ID:</label>
-                        <div class=" col-auto  mb-3">
-                            <InputNumber @bind-Value="Entradas.EntradaId" class="form-control" min="0"></InputNumber>
-                            <ValidationMessage For="@(() => Entradas.EntradaId)" />
-                        </div>
-                        <div class="col">
-                            <button type="button" class="btn btn-primary oi oi-magnifying-glass" @onclick="Buscar"></button>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col">
-                            <label>Fecha: </label>
-                            <InputDate @bind-Value="Entradas.Fecha" class="form-control"></InputDate>
-                            <ValidationMessage For="@(() => Entradas.Fecha)" />
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col">
-                            <label>Concepto:</label>
-                            <InputText @bind-Value="Entradas.Concepto" class="form-control"></InputText>
-                            <ValidationMessage For="@(() => Entradas.Concepto)" />
-                        </div>
-                    </div>
-                    <br />
-
-                    <div class="card card">
-                        <fieldset>
+                        <div class="card">
                             <div class="card-header">
                                 <h3>Utilizados</h3>
                             </div>
                             <div class="card-body">
                                 <div class="row">
                                     <div class="col-md-6">
-                                        <label>Producto: </label>
-                                        <InputSelect @bind-Value="EntradasDetalle.ProductoId" class="form-select">                                    
-                                        @foreach (var item in Productos)
+                                        <label>Producto:</label>
+                                        <InputSelect @bind-Value="EntradasDetalle.ProductoId" class="form-select">
+                                            @foreach (var item in Productos)
                                             {
-                                                @if(item.Tipo == 0)
+                                                @if (item.Tipo == 0)
                                                 {
                                                     <option value="@item.ProductoId">@item.Descripcion</option>
                                                 }
@@ -58,26 +58,22 @@
                                         </InputSelect>
                                         <ValidationMessage For="@(() => EntradasDetalle.DetalleId)" />
                                     </div>
-                                    <div class="col-md-5">
-                                        <label>Cantidad</label>
-                                        <div class="row">
-                                            <div class="col">
-                                                <div class="input-group">
-                                                    <InputNumber @bind-Value="EntradasDetalle.CantidadUtilizada" class="form-control" min="0"></InputNumber>
-                                                    <button type="button" class="btn btn-success" @onclick="AgregarDetalle">Agregar <i class="oi oi-plus" /></button>
-                                                    <ValidationMessage For="@(() => EntradasDetalle.CantidadUtilizada)" />
-                                                </div>
-                                            </div>
+                                    <div class="col-md-6">
+                                        <label>Cantidad:</label>
+                                        <div class="input-group">
+                                            <InputNumber @bind-Value="EntradasDetalle.CantidadUtilizada" class="form-control" min="0"></InputNumber>
+                                            <button type="button" class="btn btn-success" @onclick="AgregarDetalle">Agregar <i class="oi oi-plus" /></button>
+                                            <ValidationMessage For="@(() => EntradasDetalle.CantidadUtilizada)" />
                                         </div>
                                     </div>
                                 </div>
-                               <div class="row"> 
-                                   <div class="col">
+                                <div class="row">
+                                    <div class="col">
                                         <table class="table">
                                             <thead>
                                                 <tr>
                                                     <th>ProductoID</th>
-                                                    <th>Descripci&oacute;n</th>
+                                                    <th>Descripción</th>
                                                     <th>Cantidad</th>
                                                 </tr>
                                             </thead>
@@ -85,59 +81,58 @@
                                                 @foreach (var item in this.Entradas.EntradasDetalles)
                                                 {
                                                     <tr>
-                                                    <td>@item.ProductoId</td>
-                                                    <td>@ObtenerDescripcion(item.ProductoId)</td>
-                                                    <td>@item.CantidadUtilizada g</td>
+                                                        <td>@item.ProductoId</td>
+                                                        <td>@ObtenerDescripcion(item.ProductoId)</td>
+                                                        <td>@item.CantidadUtilizada g</td>
                                                         <td><button type="button" class="btn btn-danger" @onclick=@(() => RemoverDetalle(item))><i class="oi oi-trash" /></button></td>
                                                     </tr>
                                                 }
                                             </tbody>
                                         </table>
-                                   </div>
-                               </div>                           
+                                    </div>
+                                </div>
                                 <div class="row justify-content-between">
-                                    <div class="col-2">
+                                    <div class="col-12 col-md-4">
                                         <label>Peso Total:</label>
-                                    <input @bind-value="PesoTotal" class="form-control" disabled />
+                                        <input @bind-value="PesoTotal" class="form-control" disabled />
                                     </div>
                                 </div>
                             </div>
-                        </fieldset>
-                    </div>
-                    <br />
-
-                    <fieldset >
-                        <legend>Producido</legend>
-                        <div class="row">
-                            <div class="col-3">
-                                <InputSelect @bind-Value="Entradas.ProductoId" class="form-select" @onblur="VerificarSeleccionadoProducion">
-                                    <option value="0">Opciones</option>
-                                    @foreach (var item in Productos)
-                                    {
-                                        @if (item.Tipo == 1)
-                                        {
-                                            <option value="@item.ProductoId">@item.Descripcion</option>
-                                        }
-                                    }
-                                </InputSelect>
-                                <ValidationMessage For="@(() => EntradasDetalle.DetalleId)" />
-                            </div>
-                            <div class="col-2">
-                                <InputNumber @bind-Value="Entradas.CantidadProducida" class="form-control" @onblur="ValidarProducido" min="0"></InputNumber>
-                            </div>
                         </div>
-                    </fieldset>
+                        <br />
 
-                </div>
-                <div class="card-footer">
-                    <div class="card-footer text-center">
-                        <button type="button" class="btn btn-primary" @onclick="Nuevo">Nuevo <i class="oi oi-file" /></button>
-                        <button class="btn btn-success">Guardar <i class="oi oi-document" /></button>
-                        <button type="button" class="btn btn-danger" @onclick="Eliminar">Eliminar <i class="oi oi-trash" /></button>
-                    </div>
+                        <fieldset>
+                            <legend>Producido</legend>
+                            <div class="row">
+                                <div class="col-12 col-md-4">
+                                    <label>Producto:</label>
+                                    <InputSelect @bind-Value="Entradas.ProductoId" class="form-select" @onblur="VerificarSeleccionadoProducion">
+                                        <option value="0">Opciones</option>
+                                        @foreach (var item in Productos)
+                                        {
+                                            @if (item.Tipo == 1)
+                                            {
+                                                <option value="@item.ProductoId">@item.Descripcion</option>
+                                            }
+                                        }
+                                    </InputSelect>
+                                    <ValidationMessage For="@(() => EntradasDetalle.DetalleId)" />
+                                </div>
+                                <div class="col-12 col-md-2">
+                                    <label>Cantidad:</label>
+                                    <InputNumber @bind-Value="Entradas.CantidadProducida" class="form-control" @onblur="ValidarProducido" min="0"></InputNumber>
+                                </div>
+                            </div>
+                        </fieldset>
+                    </div>                    
+                        <div class="card-footer text-center">
+                            <button type="button" class="btn btn-primary" @onclick="Nuevo">Nuevo <i class="oi oi-file" /></button>
+                            <button class="btn btn-success">Guardar <i class="oi oi-document" /></button>
+                            <button type="button" class="btn btn-danger" @onclick="Eliminar">Eliminar <i class="oi oi-trash" /></button>
+                        </div>
                 </div>
             </div>
-       </div>
+        </div>
     </div>
 </EditForm>
 
