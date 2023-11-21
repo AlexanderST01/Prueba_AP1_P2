@@ -147,6 +147,7 @@
     public List<EntredasDetalle> DetallesEliminados { get; set; } = new();
     public List<EntredasDetalle> DetallesAgregado { get; set; } = new();
     public List<EntredasDetalle> DetallesModificado { get; set; } = new();
+    public List<EntredasDetalle> DetallesModificadoYCambiado { get; set; } = new();
 
     // public List<EntredasDetalle> ReduccionProductos { get; set; } = new();
     public bool MPP5 { get; set; } = false;
@@ -177,6 +178,54 @@
     public async Task Guardar()
     { 
         /* ((await ValidarProducido() || Entradas.ProductoId == 0) && ValidarEntradasDetalle()) */
+
+        // if (await ValidarProducido())
+        // {
+        //     Entradas.PesoTotal = PesoTotal;
+
+        //     var listEntradas = await httpClient.GetFromJsonAsync<List<Entradas>>("api/Entradas");
+        //     var entradaAux = listEntradas!.FirstOrDefault(e => e.EntradaId == Entradas.EntradaId);
+        //     var ListProductos = await httpClient.GetFromJsonAsync<List<Productos>>("api/Productos");
+        //     var ListDetalles = await httpClient.GetFromJsonAsync<List<EntredasDetalle>>("api/Entradas/EntradasDetalles");
+
+        //     if (entradaAux is not null)
+        //     {
+        //         var CantidadProducidoMayor = (entradaAux.CantidadProducida < Entradas.CantidadProducida) && Entradas.ProductoId >= 5;
+        //         if (CantidadProducidoMayor)
+        //         {
+        //             var aumentrar = ListProductos!.FirstOrDefault(p => p.ProductoId == Entradas.ProductoId);
+        //             aumentrar!.Existencia = aumentrar.Existencia + (Entradas.CantidadProducida - entradaAux.CantidadProducida);
+        //             using var responseDetalleAgregado = await httpClient.PutAsJsonAsync<Productos>($"api/Productos/{aumentrar.ProductoId}", aumentrar);
+        //         }
+
+        //         var CantidadProducidoMenor = (entradaAux.CantidadProducida > Entradas.CantidadProducida) && Entradas.ProductoId >= 5;
+        //         if (CantidadProducidoMenor)
+        //         {
+        //             var disminuir = ListProductos!.FirstOrDefault(p => p.ProductoId == Entradas.ProductoId);
+        //             disminuir!.Existencia = disminuir.Existencia - (entradaAux.CantidadProducida - Entradas.CantidadProducida);
+        //             using var responseDetalleAgregado = await httpClient.PutAsJsonAsync<Productos>($"api/Productos/{disminuir.ProductoId}", disminuir);
+        //         }
+        //         /////////////
+        //         var RestablacerProductoMixto = ProductoModificado != Entradas.ProductoId && Entradas.ProductoId >= 5;
+        //         if (RestablacerProductoMixto)
+        //         {
+        //             var disminuir = ListProductos!.FirstOrDefault(p => p.ProductoId == ProductoModificado);
+        //             disminuir!.Existencia = disminuir.Existencia - CantidadProducidaModificada;
+        //             using var responseDetalleAgregado = await httpClient.PutAsJsonAsync<Productos>($"api/Productos/{disminuir.ProductoId}", disminuir);
+        //             /////////////////////////
+        //             if (Entradas.CantidadProducida == entradaAux.CantidadProducida)
+        //             {
+        //                 var aumentrar = ListProductos!.FirstOrDefault(p => p.ProductoId == Entradas.ProductoId);
+        //                 aumentrar!.Existencia = aumentrar.Existencia + Entradas.CantidadProducida;
+        //                 using var responseDetalleAgregado2 = await httpClient.PutAsJsonAsync<Productos>($"api/Productos/{aumentrar.ProductoId}", aumentrar);
+        //             }
+        //             /////////////////////////
+        //         }
+        //         /////////////
+
+
+        //     }
+
         if (await ValidarProducido())
         {
             Entradas.PesoTotal = PesoTotal;
@@ -220,7 +269,6 @@
                     /////////////////////////
                 }
                 /////////////
-
 
 
             }
@@ -274,14 +322,14 @@
 
             var entradasDevuelta = await response.Content.ReadFromJsonAsync<Entradas>();
 
-            foreach (var item in DetallesEliminados)
-            {
-                if (DetallesAgregado.Any(d => d.DetalleId == item.DetalleId))
-                {
-                    DetallesEliminados.Remove(item);
-                    DetallesAgregado.Remove(item);
-                }
-            }
+            // foreach (var item in DetallesEliminados)
+            // {
+            //     if (DetallesAgregado.Any(d => d.DetalleId == item.DetalleId))
+            //     {
+            //         DetallesEliminados.Remove(item);
+            //         DetallesAgregado.Remove(item);
+            //     }
+            // }
 
             Entradas = entradasDevuelta!;
 
@@ -295,6 +343,15 @@
                     using var responseDetalleEliminado = await httpClient.PutAsJsonAsync<Productos>($"api/Productos/{aumentar.ProductoId}", aumentar);
                 }
             }
+            if (DetallesModificadoYCambiado!.Count > 0)
+            {
+                foreach (var item in DetallesModificadoYCambiado)
+                {
+                    var aumentar = Productos.FirstOrDefault(p => p.ProductoId == item.ProductoId);
+                    aumentar!.Existencia = aumentar.Existencia + item.CantidadUtilizada;
+                    using var responseDetalleEliminado = await httpClient.PutAsJsonAsync<Productos>($"api/Productos/{aumentar.ProductoId}", aumentar);
+                }
+            }
 
             if (DetallesAgregado.Count > 0)
             {
@@ -302,6 +359,7 @@
                 {
                     var disminuir = Productos.FirstOrDefault(p => p.ProductoId == item.ProductoId);
                     disminuir!.Existencia = disminuir.Existencia - item.CantidadUtilizada;
+
                     using var responseDetalleAgregado = await httpClient.PutAsJsonAsync<Productos>($"api/Productos/{disminuir.ProductoId}", disminuir);
                 }
             }
@@ -318,7 +376,7 @@
             Nuevo();
         }
 
-        else if (ValidarEntradasDetalle())/* if (ValidacionEntro) */
+        else if (ValidarEntradasDetalle())
         {
             var mensaje = new NotificationMessage
                 {
@@ -350,6 +408,7 @@
         Entradas = new();
         EntradasDetalle = new();
         DetallesAgregado = new();
+        DetallesModificadoYCambiado = new();
         ProductoModificado = 0;
         CantidadProducidaModificada = 0;
 
@@ -373,6 +432,7 @@
         CantidadProducidaModificada = 0;
         DetallesAgregado = new();
         DetallesEliminados = new();
+        DetallesModificadoYCambiado = new();
         var entradasNotNull = (await httpClient.GetFromJsonAsync<List<Entradas>>($"api/Entradas"))!
         .ToList().Any(e => e.EntradaId == Entradas.EntradaId);
 
@@ -495,8 +555,19 @@
             if (!Existe)
                 DetallesAgregado.Add(EntradasDetalle);
 
-            else if(encontrado!.FirstOrDefault(e => e.DetalleId == EntradasDetalle.DetalleId)!.CantidadUtilizada != EntradasDetalle.CantidadUtilizada)
-                DetallesModificado.Add(EntradasDetalle);
+            else
+            {
+                if (encontrado!.FirstOrDefault(e => e.DetalleId == EntradasDetalle.DetalleId)!.CantidadUtilizada != EntradasDetalle.CantidadUtilizada)
+                    DetallesModificado.Add(EntradasDetalle);
+
+                if (encontrado!.FirstOrDefault(e =>  e.DetalleId == EntradasDetalle.DetalleId)!.ProductoId != EntradasDetalle.ProductoId)
+                {
+                    var eliminado = encontrado!.FirstOrDefault(e => e.DetalleId == EntradasDetalle.DetalleId);
+                    DetallesModificadoYCambiado.Add(eliminado!);
+                    DetallesAgregado.Add(EntradasDetalle);
+                }
+                Console.WriteLine();
+            }
 
 
             Entradas.EntradasDetalles.Add(EntradasDetalle);
@@ -524,9 +595,11 @@
         EntradasDetalle.ProductoId = detalle.ProductoId;
         Entradas.EntradasDetalles.Remove(detalle);
         PesoTotal = Entradas.EntradasDetalles.Sum(ed => ed.CantidadUtilizada);
+        // if (DetallesAgregado.Any(d => d.DetalleId == detalle.DetalleId ))
 
         if (DetallesAgregado.Any(d => d.DetalleId == detalle.DetalleId))
             DetallesAgregado.Remove(detalle);
+
 
         DetallesEliminados.Add(detalle);
 

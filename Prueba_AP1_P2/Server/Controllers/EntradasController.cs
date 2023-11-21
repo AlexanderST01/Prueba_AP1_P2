@@ -98,7 +98,19 @@ namespace Prueba_AP1_P2.Server.Controllers
 
             return Ok(entradas);
         }
-                                        
+        [HttpPost("EntradasDetalle")]
+        public async Task<ActionResult<Entradas>> PostEntradasDetalle(EntredasDetalle entradasDetalle)
+        {
+            if (!EntradasExists(entradasDetalle.EntradaId))
+                _context.EntradasDetalles.Add(entradasDetalle);
+            else
+                _context.EntradasDetalles.Update(entradasDetalle);
+
+            await _context.SaveChangesAsync();
+
+            return Ok(entradasDetalle);
+        }
+
         // DELETE: api/Entradas/5
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteEntradas(int id)
