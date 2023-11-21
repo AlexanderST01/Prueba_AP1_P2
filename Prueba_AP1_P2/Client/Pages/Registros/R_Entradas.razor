@@ -221,7 +221,7 @@
                 }
                 /////////////
 
-               
+
 
             }
 
@@ -238,7 +238,7 @@
                 foreach (var item in DetallesModificado)
                 {
                     var EntradasDetalleModificar = ListDetalles!.FirstOrDefault(e => e.DetalleId == item.DetalleId);
-                    if (item.CantidadUtilizada > EntradasDetalleModificar.CantidadUtilizada)
+                    if (item.CantidadUtilizada > EntradasDetalleModificar!.CantidadUtilizada)
                     {
                         var disminuir = ListProductos!.FirstOrDefault(p => p.ProductoId == item.ProductoId);
                         disminuir!.Existencia = disminuir.Existencia - (item.CantidadUtilizada - EntradasDetalleModificar.CantidadUtilizada);
@@ -497,7 +497,7 @@
 
             else if(encontrado!.FirstOrDefault(e => e.DetalleId == EntradasDetalle.DetalleId)!.CantidadUtilizada != EntradasDetalle.CantidadUtilizada)
                 DetallesModificado.Add(EntradasDetalle);
-            
+
 
             Entradas.EntradasDetalles.Add(EntradasDetalle);
             EntradasDetalle = new EntredasDetalle();
@@ -518,7 +518,7 @@
         return new Entradas();
     }
 
-    private async Task RemoverDetalle(EntredasDetalle detalle)
+    private void RemoverDetalle(EntredasDetalle detalle)
     {
         EntradasDetalle = detalle;
         EntradasDetalle.ProductoId = detalle.ProductoId;
@@ -553,230 +553,235 @@
         MPP2 = false;
         MPC5 = false;
         ValidacionEntro = false;
-
-        if (Entradas.ProductoId == 5)
+        await Task.Run(() =>
         {
-            var mani = Entradas.EntradasDetalles.Where(p => p.ProductoId == 1).Sum(s => s.CantidadUtilizada);
-            var pistacho = Entradas.EntradasDetalles.Where(p => p.ProductoId == 2).Sum(s => s.CantidadUtilizada);
-            var pasas = Entradas.EntradasDetalles.Where(p => p.ProductoId == 3).Sum(s => s.CantidadUtilizada);
-
-            for (int i = 0; i < Entradas.CantidadProducida; i++)
+            if (Entradas.ProductoId == 5)
             {
-                // if (mani < 1)
-                // {
-                //     var mensaje = new NotificationMessage
-                //         {
-                //             Severity = NotificationSeverity.Error,
-                //             Detail = $"Te faltan gramos de pistacho para el producto mixto",
-                //             Summary = "Maní ",
-                //             Duration = 5_000
-                //         };
-                //     notificationService.Notify(mensaje);
-                // }
+            
+                    var mani = Entradas.EntradasDetalles.Where(p => p.ProductoId == 1).Sum(s => s.CantidadUtilizada);
+                    var pistacho = Entradas.EntradasDetalles.Where(p => p.ProductoId == 2).Sum(s => s.CantidadUtilizada);
+                    var pasas = Entradas.EntradasDetalles.Where(p => p.ProductoId == 3).Sum(s => s.CantidadUtilizada);
 
-                // if (pistacho < 1)
-                // {
-                //     var mensaje = new NotificationMessage
-                //         {
-                //             Severity = NotificationSeverity.Error,
-                //             Summary = "Pistacho ",
-                //             Detail = $"Te faltan gramos de pistacho para el producto mixto",
-                //             Duration = 5_000
-                //         };
-                //     notificationService.Notify(mensaje);
-                // }
+                    for (int i = 0; i < Entradas.CantidadProducida; i++)
+                    {
+                        // if (mani < 1)
+                        // {
+                        //     var mensaje = new NotificationMessage
+                        //         {
+                        //             Severity = NotificationSeverity.Error,
+                        //             Detail = $"Te faltan gramos de pistacho para el producto mixto",
+                        //             Summary = "Maní ",
+                        //             Duration = 5_000
+                        //         };
+                        //     notificationService.Notify(mensaje);
+                        // }
 
-                // if (pasas < 1)
-                // {
-                //     var mensaje = new NotificationMessage
-                //         {
-                //             Severity = NotificationSeverity.Error,
-                //             Summary = "Pasas ",
-                //             Detail = $"Te faltan gramos de pasa para el producto mixto",
-                //             Duration = 5_000
-                //         };
-                //     notificationService.Notify(mensaje);
-                // }
+                        // if (pistacho < 1)
+                        // {
+                        //     var mensaje = new NotificationMessage
+                        //         {
+                        //             Severity = NotificationSeverity.Error,
+                        //             Summary = "Pistacho ",
+                        //             Detail = $"Te faltan gramos de pistacho para el producto mixto",
+                        //             Duration = 5_000
+                        //         };
+                        //     notificationService.Notify(mensaje);
+                        // }
+
+                        // if (pasas < 1)
+                        // {
+                        //     var mensaje = new NotificationMessage
+                        //         {
+                        //             Severity = NotificationSeverity.Error,
+                        //             Summary = "Pasas ",
+                        //             Detail = $"Te faltan gramos de pasa para el producto mixto",
+                        //             Duration = 5_000
+                        //         };
+                        //     notificationService.Notify(mensaje);
+                        // }
 
 
 
-                MPP5 = ((mani + pistacho + pasas) >= 226.80) && (mani > 0 && pistacho > 0 && pasas >0);
+                        MPP5 = ((mani + pistacho + pasas) >= 226.80) && (mani > 0 && pistacho > 0 && pasas > 0);
 
-                if (MPP5)
-                {
-                    
-                    Producidos = Productos.FirstOrDefault(p => p.ProductoId == 5)!;
-                    Producidos.Existencia = Entradas.CantidadProducida;
-                    mani -= 75.60;
-                    pistacho -= 75.60;
-                    pasas -= 75.60;
-                }
-                else
-                {
-                    var mensaje = new NotificationMessage
+                        if (MPP5)
                         {
-                            Severity = NotificationSeverity.Error,
-                            Summary = "Productos ",
-                            Detail = $"Debes de introducir mas productoas para producir productos mixtos",
-                            Duration = 5_000
-                        };
-                    notificationService.Notify(mensaje);
-                    break;
-                }
+
+                            Producidos = Productos.FirstOrDefault(p => p.ProductoId == 5)!;
+                            Producidos.Existencia = Entradas.CantidadProducida;
+                            mani -= 75.60;
+                            pistacho -= 75.60;
+                            pasas -= 75.60;
+                        }
+                        else
+                        {
+                            var mensaje = new NotificationMessage
+                                {
+                                    Severity = NotificationSeverity.Error,
+                                    Summary = "Productos ",
+                                    Detail = $"Debes de introducir mas productoas para producir productos mixtos",
+                                    Duration = 5_000
+                                };
+                            notificationService.Notify(mensaje);
+                            break;
+                        }
+                    }
+                ValidacionEntro = true;
             }
-            ValidacionEntro = true;
-        }
 
-        if (Entradas.ProductoId == 6)
-        {
-            var mani = Entradas.EntradasDetalles.Where(m => m.ProductoId == 1).Sum(s => s.CantidadUtilizada);
-            var pistacho = Entradas.EntradasDetalles.Where(m => m.ProductoId == 2).Sum(s => s.CantidadUtilizada);
-            var pasas = Entradas.EntradasDetalles.Where(m => m.ProductoId == 3).Sum(s => s.CantidadUtilizada);
-            var ciruelas = Entradas.EntradasDetalles.Where(m => m.ProductoId == 4).Sum(s => s.CantidadUtilizada);
+            if (Entradas.ProductoId == 6)
+            { 
+                var mani = Entradas.EntradasDetalles.Where(m => m.ProductoId == 1).Sum(s => s.CantidadUtilizada);
+                var pistacho = Entradas.EntradasDetalles.Where(m => m.ProductoId == 2).Sum(s => s.CantidadUtilizada);
+                var pasas = Entradas.EntradasDetalles.Where(m => m.ProductoId == 3).Sum(s => s.CantidadUtilizada);
+                var ciruelas = Entradas.EntradasDetalles.Where(m => m.ProductoId == 4).Sum(s => s.CantidadUtilizada);
 
-            for (int i = 0; i < Entradas.CantidadProducida; i++)
+                for (int i = 0; i < Entradas.CantidadProducida; i++)
+                {
+                    // if (mani < 1)
+                    // {
+                    //     var mensaje = new NotificationMessage
+                    //         {
+                    //             Severity = NotificationSeverity.Error,
+                    //             Summary = "Maní ",
+                    //             Detail = $"Te faltan gramos de maní para el producto mixto",
+                    //             Duration = 5_000
+                    //         };
+                    //     notificationService.Notify(mensaje);
+                    // }
+
+                    // if (pistacho < 1 && pasas < 1)
+                    // {
+
+                    //     var mensaje = new NotificationMessage
+                    //         {
+                    //             Severity = NotificationSeverity.Error,
+                    //             Summary = "Pistacho o Pasas",
+                    //             Detail = $"Te faltan gramos de pistacho o pasas para el producto mixto",
+                    //             Duration = 5_000
+                    //         };
+                    //     notificationService.Notify(mensaje);
+
+                    // }
+
+                    // if (ciruelas < 1)
+                    // {
+                    //     var mensaje = new NotificationMessage
+                    //         {
+                    //             Severity = NotificationSeverity.Error,
+                    //             Summary = "Ciruelas ",
+                    //             Detail = $"Te faltan gramos de ciruelas para el producto mixto",
+                    //             Duration = 5_000
+                    //         };
+                    //     notificationService.Notify(mensaje);
+                    // }
+
+
+
+                    MPC5 = ((mani + pistacho + ciruelas) >= 226.80 || (mani + pasas + ciruelas) >= 226.80) && (mani > 0 && (pistacho > 0 || pasas > 0) && ciruelas > 0);
+
+                    if (MPC5)
+                    {
+
+                        Producidos = Productos.FirstOrDefault(p => p.ProductoId == 5)!;
+                        Producidos.Existencia = Entradas.CantidadProducida;
+                        mani -= 75.60;
+                        pistacho -= 75.60;
+                        pasas -= 75.60;
+                        ciruelas -= 75.60;
+                    }
+                    else
+                    {
+                        var mensaje = new NotificationMessage
+                            {
+                                Severity = NotificationSeverity.Error,
+                                Summary = "Productos ",
+                                Detail = $"Debes de introducir mas productoas para producir productos mixtos",
+                                Duration = 5_000
+                            };
+                        notificationService.Notify(mensaje);
+                            break;
+                        }
+                    }
+               
+                ValidacionEntro = true;
+            }
+
+            if (Entradas.ProductoId == 7)
             {
-                // if (mani < 1)
-                // {
-                //     var mensaje = new NotificationMessage
-                //         {
-                //             Severity = NotificationSeverity.Error,
-                //             Summary = "Maní ",
-                //             Detail = $"Te faltan gramos de maní para el producto mixto",
-                //             Duration = 5_000
-                //         };
-                //     notificationService.Notify(mensaje);
-                // }
 
-                // if (pistacho < 1 && pasas < 1)
-                // {
+                var mani = Entradas.EntradasDetalles.Where(p => p.ProductoId == 1).Sum(s => s.CantidadUtilizada);
+                var pistacho = Entradas.EntradasDetalles.Where(p => p.ProductoId == 2).Sum(s => s.CantidadUtilizada);
+                var pasas = Entradas.EntradasDetalles.Where(p => p.ProductoId == 3).Sum(s => s.CantidadUtilizada);
 
-                //     var mensaje = new NotificationMessage
-                //         {
-                //             Severity = NotificationSeverity.Error,
-                //             Summary = "Pistacho o Pasas",
-                //             Detail = $"Te faltan gramos de pistacho o pasas para el producto mixto",
-                //             Duration = 5_000
-                //         };
-                //     notificationService.Notify(mensaje);
-
-                // }
-
-                // if (ciruelas < 1)
-                // {
-                //     var mensaje = new NotificationMessage
-                //         {
-                //             Severity = NotificationSeverity.Error,
-                //             Summary = "Ciruelas ",
-                //             Detail = $"Te faltan gramos de ciruelas para el producto mixto",
-                //             Duration = 5_000
-                //         };
-                //     notificationService.Notify(mensaje);
-                // }
-
-
-
-                MPC5 = ((mani + pistacho + ciruelas) >= 226.80 || (mani + pasas + ciruelas) >= 226.80) && (mani > 0 && (pistacho > 0 || pasas > 0) && ciruelas > 0);
-
-                if (MPC5)
+                for (int i = 0; i < Entradas.CantidadProducida; i++)
                 {
+                    // if (mani < 1)
+                    // {
+                    //     var mensaje = new NotificationMessage
+                    //         {
+                    //             Severity = NotificationSeverity.Error,
+                    //             Summary = "Maní ",
+                    //             Detail = $"Te faltan gramos de maní para el producto mixto",
+                    //             Duration = 5_000
+                    //         };
+                    //     notificationService.Notify(mensaje);
+                    // }
+
+                    // if (pistacho < 1)
+                    // {
+                    //     var mensaje = new NotificationMessage
+                    //         {
+                    //             Severity = NotificationSeverity.Error,
+                    //             Summary = "Pistacho ",
+                    //             Detail = $"Te faltan gramos de pistacho para el producto mixto",
+                    //             Duration = 5_000
+                    //         };
+                    //     notificationService.Notify(mensaje);
+                    // }
+
+                    // if (pasas < 1)
+                    // {
+                    //     var mensaje = new NotificationMessage
+                    //         {
+                    //             Severity = NotificationSeverity.Error,
+                    //             Summary = "Pasas ",
+                    //             Detail = $"Te faltan gramos de pasa para el producto mixto",
+                    //             Duration = 5_000
+                    //         };
+                    //     notificationService.Notify(mensaje);
+                    // }
+
+                    MPP2 = ((mani + pistacho + pasas) >= 90.72) && (mani > 0 && pistacho > 0 && pasas > 0);
+
+                    if (MPP2)
+                    {
                     
-                    Producidos = Productos.FirstOrDefault(p => p.ProductoId == 5)!;
-                    Producidos.Existencia = Entradas.CantidadProducida;
-                    mani -= 75.60;
-                    pistacho -= 75.60;
-                    pasas -= 75.60;
-                    ciruelas -= 75.60;
+                        Producidos = Productos.FirstOrDefault(p => p.ProductoId == 7)!;
+                        Producidos!.Existencia = Entradas.CantidadProducida;
+                        mani -= 30.24;
+                        pistacho -= 30.24;
+                        pasas -= 30.24;
+                    }
+                    else
+                    {
+                        var mensaje = new NotificationMessage
+                            {
+                                Severity = NotificationSeverity.Error,
+                                Summary = "Productos ",
+                                Detail = $"Debes de introducir mas productoas para producir productos mixtos",
+                                Duration = 5_000
+                            };
+                        notificationService.Notify(mensaje);
+                        break;
+                    }
                 }
-                else
-                {
-                    var mensaje = new NotificationMessage
-                        {
-                            Severity = NotificationSeverity.Error,
-                            Summary = "Productos ",
-                            Detail = $"Debes de introducir mas productoas para producir productos mixtos",
-                            Duration = 5_000
-                        };
-                    notificationService.Notify(mensaje);
-                    break;
-                }
+                ValidacionEntro = true;
             }
-            ValidacionEntro = true;
-        }
 
-        if (Entradas.ProductoId == 7)
-        {
-            var mani = Entradas.EntradasDetalles.Where(p => p.ProductoId == 1).Sum(s => s.CantidadUtilizada);
-            var pistacho = Entradas.EntradasDetalles.Where(p => p.ProductoId == 2).Sum(s => s.CantidadUtilizada);
-            var pasas = Entradas.EntradasDetalles.Where(p => p.ProductoId == 3).Sum(s => s.CantidadUtilizada);
-
-            for (int i = 0; i < Entradas.CantidadProducida; i++)
-            {
-                // if (mani < 1)
-                // {
-                //     var mensaje = new NotificationMessage
-                //         {
-                //             Severity = NotificationSeverity.Error,
-                //             Summary = "Maní ",
-                //             Detail = $"Te faltan gramos de maní para el producto mixto",
-                //             Duration = 5_000
-                //         };
-                //     notificationService.Notify(mensaje);
-                // }
-
-                // if (pistacho < 1)
-                // {
-                //     var mensaje = new NotificationMessage
-                //         {
-                //             Severity = NotificationSeverity.Error,
-                //             Summary = "Pistacho ",
-                //             Detail = $"Te faltan gramos de pistacho para el producto mixto",
-                //             Duration = 5_000
-                //         };
-                //     notificationService.Notify(mensaje);
-                // }
-
-                // if (pasas < 1)
-                // {
-                //     var mensaje = new NotificationMessage
-                //         {
-                //             Severity = NotificationSeverity.Error,
-                //             Summary = "Pasas ",
-                //             Detail = $"Te faltan gramos de pasa para el producto mixto",
-                //             Duration = 5_000
-                //         };
-                //     notificationService.Notify(mensaje);
-                // }
-
-                MPP2 = ((mani + pistacho + pasas) >= 90.72) && (mani > 0 && pistacho > 0 && pasas > 0);
-
-                if (MPP2)
-                {
-                    
-                    Producidos = Productos.FirstOrDefault(p => p.ProductoId == 7)!;
-                    Producidos!.Existencia = Entradas.CantidadProducida;
-                    mani -= 30.24;
-                    pistacho -= 30.24;
-                    pasas -= 30.24;
-                }
-                else
-                {
-                    var mensaje = new NotificationMessage
-                        {
-                            Severity = NotificationSeverity.Error,
-                            Summary = "Productos ",
-                            Detail = $"Debes de introducir mas productoas para producir productos mixtos",
-                            Duration = 5_000
-                        };
-                    notificationService.Notify(mensaje);
-                    break;
-                }
-            }
-            ValidacionEntro = true;
-        }
-
-        // if (Entradas.ProductoId < 5) // quito este if y no deja pasar sinque agregues un producido
-        //     return true;
+            // if (Entradas.ProductoId < 5) // quito este if y no deja pasar sinque agregues un producido
+            //     return true;
+        });
 
         return MPC5 || MPP5 || MPP2;
 

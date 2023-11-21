@@ -117,7 +117,7 @@
     public DateTime Desde { get; set;}
     public DateTime Hasta { get; set; }
 
-    protected override async void OnInitialized()
+    protected override void OnInitialized()
     {
         Desde = DateTime.Now.AddMonths(-1);
         Hasta = DateTime.Now;
@@ -162,7 +162,7 @@
                 }
                 else
                 {
-                    Entradas = (await httpClient.GetFromJsonAsync<List<Entradas>>($"api/Entradas"))!.Where(t => t.Concepto
+                    Entradas = (await httpClient.GetFromJsonAsync<List<Entradas>>($"api/Entradas"))!.Where(t => t.Concepto!
                         .Contains(entradasAux.Concepto, StringComparison.OrdinalIgnoreCase)
                         && t.Fecha >= Desde.Date && t.Fecha <= Hasta).ToList();
                     StateHasChanged();
