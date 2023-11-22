@@ -467,7 +467,7 @@
     {
         var producidoHaCambido = await httpClient.GetFromJsonAsync<List<Entradas>>("api/Entradas");
 
-        if (producidoHaCambido!.FirstOrDefault(p => p.EntradaId == Entradas.EntradaId)!.CantidadProducida == Entradas.CantidadProducida)
+        if ( Entradas.EntradaId == 0 || (producidoHaCambido!.FirstOrDefault(p => p.EntradaId == Entradas.EntradaId)!.CantidadProducida == Entradas.CantidadProducida))
         {
             using var response = await httpClient.DeleteAsync($"api/Entradas/{Entradas.EntradaId}");
             if (!response.IsSuccessStatusCode)
